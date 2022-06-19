@@ -271,5 +271,40 @@ export default {
   }
  }
  ```
- 
 
+---
+### vue3 hooks
+- ref: https://juejin.cn/post/7066951709678895141
+- hooks定义：
+  - 系统运行到某一时期时，调用被注册到该时机的回调函数，如浏览器window对象中<code>onload</code>等
+  - vue hooks 的基础 - vue3 Composition API
+  - React: 以"use"作为开头的方法，提供完全避开class式写法，在```函数式组件```中完成生命周期、状态管理、逻辑利用等组件开发工作的能力
+  - Vue: 在composition API中，以"use"作为开头，一系列提供了组件复用、状态管理等开发能力的方法, 只能在```setup```内使用hooks
+  - 常见vue hooks:
+    ```js
+    import { useSlots, useAttrs } from 'vue';
+    import { useRoute } from 'vue-router';
+    ```
+- 命名规范：
+- 用意：更好的状态复用，更易于理解，
+  - vue2 mixin: 
+    - 难以追溯的方法与属性
+    - 同名方法覆盖
+    - 无法两次mixin同一文件：可用动态生成完成能力利用，但增加了程序的复杂性
+    ```js
+    export default {
+      mixins: [a, b, c],
+      mounted () {
+        console.log(this.name) // 无法判断来源于谁，如果有几个功能同时定义name作为属性，则会出现值覆盖
+      }
+    }
+    ```
+  - vue3 hooks:
+  ```js
+  const { name } = useName() // 来源清晰
+  const { name: firstName } = useName() // 内部变量在闭包内，返回亦是支持定义别名，无重名及覆盖问题
+  const { name: lastName } = useName() // 多次复用
+  ```
+- 代码组织：
+  - vue2: 关联代码可能散落在```data```, ```mounted```, ```methods```内
+  - vue3: 可将关联业务逻辑组织在一个hooks内部，只干一类事，高度聚合，可阅读性提升，效率提升bug变少
