@@ -274,7 +274,9 @@ export default {
 
 ---
 ### vue3 hooks
-- ref: https://juejin.cn/post/7066951709678895141
+- ref: 
+  - https://juejin.cn/post/7066951709678895141
+  - https://juejin.cn/post/6844903877574295560
 - hooks定义：
   - 系统运行到某一时期时，调用被注册到该时机的回调函数，如浏览器window对象中<code>onload</code>等
   - vue hooks 的基础 - vue3 Composition API
