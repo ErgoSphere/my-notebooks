@@ -1,30 +1,3 @@
-### 双向绑定原理: [ref1](https://my.oschina.net/u/4386652/blog/4281447) / [ref2](https://juejin.cn/post/6844903479044112391) / [ref3](https://www.huaweicloud.com/articles/d9c3ab01500c3343fd240da6cc65c8c6.html)
-- **2.0**
-  - 通过数据劫持发布者-订阅者的方式实现 ⇒ Object.defineProperty ⇒ 将每个数据读写转化为getter/setter， 对象上有get()、set()
-  - ES5特性，且无法补丁实现，所以不支持IE8及更低版本
-  - 不能检测到对象属性的添加或删除
-  - 当实例上的data被使用Object.freeze()时，将阻止修改现有的property，意味着响应系统无法再追踪变化
-  ```js
-  let book = {}, name = ""
-  Object.defineProperty(book, 'name', {
-   set: function(v) { 
-    name = v
-   },
-   get: function() { 
-    return name + "!"
-   }
-  })
-  book.name = "Opps" 
-  console.log(book.name) // "Opps!"
-  ```
-  - 初始化时，通过Object.defineProperty()给每个属性建立getter/setter，每个都有独立使用一个Dep作为收集器。建立一个Watcher并添加到Dep中。当属性set的时候，由Dep通知Watcher更新页面，get的时候通过Dep查找相关的Watcher依赖，如果没有使用到该属性则不会触发相关函数
-  - 无法通过直接赋值修改对象值与getter/setter初始化有关，浏览器对Object.observe()支持较差，2.0实际是未作递归的观察，原因为运行速度太差。
-- **3.0**: Proxy代理/[ref](https://v3.cn.vuejs.org/guide/reactivity.html#vue-%E5%A6%82%E4%BD%95%E8%B7%9F%E8%B8%AA%E5%8F%98%E5%8C%96)
- - 从响应式代理中访问一个嵌套对象时，对象在被返回前也转换为一个代理
- - 使用Proxy时被代理对象与原始对象不相等（===）
- - Vue reactive仍可使用===
-
----
 ### 实现不同组件间数据交流的方法
 1. 父子组件：父 ⇒ 子 props, 子 ⇒ 父 emit
 2. vuex

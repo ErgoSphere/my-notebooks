@@ -1,4 +1,4 @@
-## vue3 hooks
+## vue3 custom hooks
 
 ---
 - ### ref:
@@ -25,6 +25,7 @@
           - 难以追溯的方法与属性
           - 同名方法覆盖
           - 无法两次mixin同一文件：可用动态生成完成能力利用，但增加了程序的复杂性
+          - 无法传递状态
         ```js
         export default {
           mixins: [a, b, c],
@@ -34,11 +35,11 @@
         }
         ```
       - vue3 hooks:
-    ```js
-    const { name } = useName() // 来源清晰
-    const { name: firstName } = useName() // 内部变量在闭包内，返回亦是支持定义别名，无重名及覆盖问题
-    const { name: lastName } = useName() // 多次复用
-    ```
+        ```js
+        const { name } = useName() // 来源清晰
+        const { name: firstName } = useName() // 内部变量在闭包内，返回亦是支持定义别名，无重名及覆盖问题
+        const { name: lastName } = useName() // 多次复用
+        ```
 - 代码组织： 可将关联业务逻辑组织在一个hooks内部，响应变量和方法在一起定义和调用
 
 - ### Hook vs Utils
