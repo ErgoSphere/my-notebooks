@@ -6,15 +6,18 @@
 5. 依赖注入，指定父组件可提供给后代组件数据/方法， 父provide， 多层子inject([demo1](https://codesandbox.io/s/github/vuejs/vuejs.org/tree/master/src/v2/examples/vue-20-dependency-injection?file=/index.html:618-624), [demo2](https://v3.cn.vuejs.org/guide/component-provide-inject.html#%E5%A4%84%E7%90%86%E5%93%8D%E5%BA%94%E6%80%A7))
 6. vue.prototype["object_name"]
 7. 构建event bus
+
 ```js
 // bus.js
-import Vue from 'vue'
+import Vue from 'developments/Vue/vue'
+
 const bus = new Vue()
 export default bus
 // component a
 bus.$emit('event-name', params)
 // component b
-bus.$on('event-name', res => {})
+bus.$on('event-name', res => {
+})
 ```
 
 ---
