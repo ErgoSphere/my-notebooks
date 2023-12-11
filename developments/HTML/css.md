@@ -1,4 +1,4 @@
-###[CSS权重](https://juejin.cn/post/6844904014962753544)
+### [CSS权重](https://juejin.cn/post/6844904014962753544)
 - **内联样式**：一个标记为1，依次累加-1-0-0-0-
 - **ID选择器**：一个标记为1，依次累加-0-1-0-0-
 - **class, 属性， 伪类(:hover, visited, link, active)**：有一个标记为1，依次累加-0-0-1-0-
@@ -7,7 +7,7 @@
 - <code>!important</code>高于所有未指定，多个规则中同一属性都指定的话则相抵，依照上述情况比较计算
 
 ---
-###[BFC(Block Format context/块级格式化上下文)](https://www.cnblogs.com/chen-cong/p/7862832.html)
+### [BFC(Block Format context/块级格式化上下文)](https://www.cnblogs.com/chen-cong/p/7862832.html)
 内部元素和外部元素互不影响
 - 创建
     1. html根
@@ -20,7 +20,7 @@
     2. 防止同一BFC相领元素外边距重叠
 
 ---
-###[弹盒及响应式](https://www.jianshu.com/p/c6cae35e2b93) 
+### [弹盒及响应式](https://www.jianshu.com/p/c6cae35e2b93) 
 - **应用**
 1. 居中DIV
 2. flex-wrap对多个盒子自动换行
@@ -296,6 +296,21 @@ const webpSupport = () => {
 - css盒模型 (content-box): width不包括padding和border
 
 ---
+### 行内元素（inline）和块级元素（block）
+- inline不以新行开始，block新起一行
+- inline只包括text和其他行内元素，block可含inline和其他块级元素
+- 区别：盒模型中inline不支持设置宽高，支持水平/垂直方向的padding/border/margin，但垂直方向上的值不影响布局
+
+---
+### 页面导入样式时，使用 link 和 @import 有什么区别
+1. 从属关系区别。 @import 是 CSS 提供的语法规则，只有导入样式表的作用；link 是 HTML 提供的标签，不仅可以加
+载 CSS 文件，还可以定义 RSS、rel 连接属性、引入网站图标等。
+2. 加载顺序区别。加载页面时，link 标签引入的 CSS 被同时加载；@import 引入的 CSS 将在页面加载完毕后被加载。
+3. 兼容性区别。@import 是 CSS2.1 才有的语法，故只可在 IE5+ 才能识别；link 标签作为 HTML 元素，不存在兼容
+性问题。
+4. DOM 可控性区别。可以通过 JS 操作 DOM ，插入 link 标签来改变样式；由于 DOM 方法是基于文档的，无法使用
+@import 的方式插入样式。
+---
 ### 图片显示模糊的解决方案
 - 使用<code>@media screen</code> + <code>devicePixelRatio</code>对应的倍率图片(@2x/@3x)
   ```css
@@ -321,7 +336,11 @@ const webpSupport = () => {
   ```
 
 ---
-###其它问题
+### head标签中必不可少的标签
+- ```<title>```
+
+---
+### 其它问题
 1.
 >**Q**: fixed定位没有按照窗口视图
 >

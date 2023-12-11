@@ -34,8 +34,20 @@
 
 ---
 ###  JS数据类型 ([ref](https://zhuanlan.zhihu.com/p/95534245))
-1. 基本数据类型：Undefined, Null, Number, String, Boolean, Symbol(ES6)
+1. 基本数据类型：Undefined, Null, Number, String, Boolean, Symbol(ES6), BigInt
 2. 复杂数据类型：Object
+```
+typeof Number = "number"
+typeof NaN = "number"
+typeof String = "string"
+typeof Object = "object"
+typeof Array = "object"
+typeof null = "object"
+typeof Function = "function"
+typeof Undefined = "undefined"
+typeof Boolean = "boolean"
+typeof Symbol = "symbol"
+```
 
 ---
 ###  Symbol
@@ -336,6 +348,7 @@ document.addEventListener("visibilitychange", function(ev) {
 1. websocket
 2. localStorage event
 3. postMessage
+4. SharedWorker: 特定类型worker，如几个窗口、iframe或其他worker，必须同源，
 
 ---
 ####  输入网址后浏览器做了什么事(浏览器渲染过程)
@@ -1173,3 +1186,69 @@ let o3 = Object.assign({}, {
 ### `window.onload` vs `DOMContentLoaded`
 - window.onload: 文档中所有对象在DOM中，图片，脚本，链接及子框架都完成装载
 - DOMContentLoaded：初始HTML文件被完全加载和解析完成后触发，不需等待样式图像等完全加载
+
+---
+### websocket兼容低版本浏览器
+- 长轮询XHR
+- 其于multipart发送XHR
+- IE: ActiveX HTMLFile
+- Adobe Flash Socket(已停止)
+
+---
+### 每个对象是否一定有原型并从原型继承属性方法
+- 错误
+- ```Object.prototype```没有原型，```Object.prototype.__proto__ === null```
+- 使用```Object.getPrototypeOf(Object.prototype)```替换上述方法
+
+---
+### 函数原型链
+> myFunction --> Function.prototype --> Object.prototype --> null
+
+---
+### Array.indexOf vs Array.includes
+- 返回值：indexOf --> 索引， includes --> boolean
+- NaN: ```[1, 2, NaN, 3, 4, NaN]```, ```indexOf```总是返回```-1```， ```includes```可正确判断```NaN```
+
+--- 
+### 变量提升（Variable Hoisting）vs 函数提升（Function Hoisting）
+- 函数提升优先级比变量提升高
+- 发生在编译阶段放入内存时
+```javascript
+var a = 1;
+function fn() {
+  var a = 2;
+  function a() { console.log(3) }
+  return a
+  function a() { console.log(4) }
+}
+var b = fn()
+console.log(b)  // output: 2
+```
+执行过程
+```javascript
+function fn () { // 内部函数
+  var a
+  a = () => { console.log(3) } 
+  a = () => { console.log(4) }
+  a = 2
+  return a
+}
+```
+
+---
+### dom attribute vs dom property
+- attribute是dom元素在文档中作为html标签拥有的属性
+- property是dom元素在js中的对象属性
+
+--- 
+### __proto__ vs prototype
+- 对象属性__proto__
+- 函数对象属性prototype
+
+--- 
+### 不支持冒泡的事件
+- focus，blur(element)
+- mouseenter, mouseleave(element)
+- resize(window)
+- load, unload(window)
+- 
