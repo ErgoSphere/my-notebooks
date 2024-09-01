@@ -124,21 +124,21 @@
    ```
 
 ---
-###响应式布局
+### 响应式布局
 - responsive: @media(CSS3)
 - 各单位：
-    + **px**: 绝对单位，精确按像素显示，chrome强制最小为12px, 可使用transform: scale hack
+    + **px**: 绝对单位，精确按像素显示，chrome强制最小为12px, 可使用```transform: scale``` hack
     + **em**: 相对单位，基准为父节点字体大小，自身定义了font-size的话则整个页面1em都是不一样的值
     + **rem**(css3): 相对单位，类root em，根椐节点html字体大小计算(例<code>1 rem = document.documentElement.clientWidth/10 + "px"</code>)，chrome/firefox/IE9
-    + **vw, vh**: 视窗宽高，IE9+部份支持
+    + **vw, vh**: 相对单位，视窗宽高，IE9+部份支持
     + **vmin, vmax**: vw和vh中较小/大的
 
 ---
-###width 覆盖
+### width 覆盖
 min-width > max-width > width (即使!important)
 
 ---
-###小型大写字母
+### 小型大写字母
 ```css
 * {
     font-variant: small-caps
@@ -146,28 +146,28 @@ min-width > max-width > width (即使!important)
 ```
 
 ---
-###代码规范（书写顺序）
-1. 布局定位： display, position, etc
-2. 自身属性：width, background, etc
-3. 文本属性：font, color, etc
-4. 其它属性：transition, cursor, etc
+### 代码规范（书写顺序）
+1. 布局定位：```display```, ```position```, etc
+2. 自身属性：```width```, ```background```, etc
+3. 文本属性：```font```, ```color```, etc
+4. 其它属性：``transition``, ``cursor``, etc
 
 ---
-###FLIP动画处理
+### FLIP动画处理
 - [https://juejin.cn/post/6844903772968206350](https://juejin.cn/post/6844903772968206350)
 - [https://codesandbox.io/s/react-picture-preview-flip-demo-m5zbm?file=/src/App.js](https://codesandbox.io/s/react-picture-preview-flip-demo-m5zbm?file=/src/App.js)
 
 ---
-###CSS像素，物理像素, viewport等
-1. ** CSS像素(CSS pixels)：px**
+### CSS像素，物理像素, viewport等
+1. **CSS像素(CSS pixels)：px**
 - px是相对单位，相对于设备像素(Device pixel)，是一个抽象概念，在谈论时一定要清楚它的上下文
 - 同一设备上1px对应物理像素可变化
 2. **物理像素/设备像素/DP(device-pixels)**
-- 单位pt，在css中属于绝对单位，1pt = 1/72inch
-- 设备像素比 DPR = DP/CSS pixel
+- 单位pt，在css中属于绝对单位，```1pt = 1/72inch```
+- 设备像素比```DPR = DP/CSS pixel```
 3. **设备独立像素/逻辑像素(DIP, Device Independent Pixel)**
-- CSS pixel = DIP
-- window对象中的devicePixelRatio = DP/DIP = DP/CSS pixel，所以由这个值能得到1个css像素可以代表多少个物理像素
+- ```CSS pixel = DIP```
+- ```window.devicePixelRatio = DP/DIP = DP/CSS pixel```，所以由这个值能得到1个css像素可以代表多少个物理像素
 4. **设备像素比/DPR(device pixels ratio)**
 - 描述为**未缩放状态下**<code>物理像素</code>和<code>CSS像素</code>的**初始比例**关系
 5. **PPI(pixels per inch)**
@@ -190,28 +190,12 @@ min-width > max-width > width (即使!important)
 document.write('<meta name="viewport" content="width=device-width, initial-scale=1.0">')
 //方法2, 已有meta viewport
 document.getElementsByTagName("meta")[0].setAttribute("content", "width=device-width")
-
 ```
 
 ---
-###webp显示问题
-低版本safari不一定显示
-```js
-//检测是否支持webp
-const webpSupport = () => {
-  let elem = document.createElement("canvas")
-  if (elem.getContext && elem.getContext("2d")) {
-    return elem.toDataURL("image/webp").indexOf("data:image/webp") === 0
-  } else {
-    return false //old browser like IE8, canvas is not supported
-  }
-}
-```
-
----
-###什么时候需要用到@2x, @3x的图片
-- devicePixelRatio为2/3的时候
-  ```scss
+### 使用@2x, @3x的图片的场景
+```devicePixelRatio = 2/3```的时候
+```scss
   @mixin bg-image($url) {
     background-image: url($url + "@2x.png");
     @media (-webkit-min-device-pixel-ratio: 3), (min-device-pixel-ratio: 3) {
@@ -226,10 +210,10 @@ const webpSupport = () => {
     background-repeat: no-repeat;
     @include bg-iamge("logo")
   }
-  ```
+ ```
 
 ---
-###实现1物理像素(1dp)边框
+### 实现1物理像素(1dp)边框
 1. 由<code>window.devicePixelRatio</code>或逆算出对应px值（可能导致浏览器取px差异，兼容性差
 2. 媒体查询，有同上毛病，且为非标准特性, Float px values may render differently on different browsers
    ```css
@@ -291,9 +275,24 @@ const webpSupport = () => {
    ```
 
 ---
+### webp显示问题
+低版本safari不一定显示
+```js
+//检测是否支持webp
+const webpSupport = () => {
+  let elem = document.createElement("canvas")
+  if (elem.getContext && elem.getContext("2d")) {
+    return elem.toDataURL("image/webp").indexOf("data:image/webp") === 0
+  } else {
+    return false //old browser like IE8, canvas is not supported
+  }
+}
+```
+
+---
 ### 盒模型
-- IE盒模型（border-box）: width包括padding和border
-- css盒模型 (content-box): width不包括padding和border
+- IE盒模型（border-box）: width包括padding和border，```width = content + border + padding```
+- css盒模型 (content-box): width不包括padding和border，```width = content```
 
 ---
 ### 行内元素（inline）和块级元素（block）
@@ -302,14 +301,13 @@ const webpSupport = () => {
 - 区别：盒模型中inline不支持设置宽高，支持水平/垂直方向的padding/border/margin，但垂直方向上的值不影响布局
 
 ---
-### 页面导入样式时，使用 link 和 @import 有什么区别
-1. 从属关系区别。 @import 是 CSS 提供的语法规则，只有导入样式表的作用；link 是 HTML 提供的标签，不仅可以加
-载 CSS 文件，还可以定义 RSS、rel 连接属性、引入网站图标等。
-2. 加载顺序区别。加载页面时，link 标签引入的 CSS 被同时加载；@import 引入的 CSS 将在页面加载完毕后被加载。
-3. 兼容性区别。@import 是 CSS2.1 才有的语法，故只可在 IE5+ 才能识别；link 标签作为 HTML 元素，不存在兼容
-性问题。
-4. DOM 可控性区别。可以通过 JS 操作 DOM ，插入 link 标签来改变样式；由于 DOM 方法是基于文档的，无法使用
-@import 的方式插入样式。
+### 页面导入样式时，使用```link```和```@import```有什么区别
+1. 从属关系区别。 ```@import```是 CSS 提供的语法规则，只有导入样式表的作用；```link```是HTML提供的标签，不仅可以加
+载CSS文件，还可以定义```RSS```、```rel```连接属性、引入网站图标等。
+2. 加载顺序区别。加载页面时，```link```标签引入的CSS被同时加载；```@import```引入的CSS将在页面加载完毕后被加载。
+3. 兼容性区别。```@import```是```CSS2.1```才有的语法，故只可在```IE5+```才能识别；```link```标签作为HTML元素，不存在兼容性问题。
+4. DOM可控性区别。可以通过JS操作 DOM ，插入link标签来改变样式；由于DOM方法是基于文档的，无法使用@import 的方式插入样式。
+
 ---
 ### 图片显示模糊的解决方案
 - 使用<code>@media screen</code> + <code>devicePixelRatio</code>对应的倍率图片(@2x/@3x)
@@ -338,6 +336,25 @@ const webpSupport = () => {
 ---
 ### head标签中必不可少的标签
 - ```<title>```
+
+---
+###  回流和重绘
+- 回流：回流是布局或者几何属性需要改变。回流必定会发生重绘，重绘不一定会引发回流。
+- 重绘：由于节点的集合属性发生改变或者由于样式改变而不会影响布局的，成为重绘，例如 outline、visibility、color、background-color 等
+- 优化：
+    - 避免使用强制渲染刷新队列的函数，如```width```, ```height```, ```getBoundingClientRect```, ````scrollTop````, ```offsetTop```等
+    - 使用```visibility（重绘）```替换```display: none（回流）```
+    - 避免使用```table```
+    - 避免使用```css表达式（回流）```
+    - 动画效果应用到```position```属性为```absolute```或```fixed```的元素上
+
+---
+### ```animation-timing-function```使用贝塞尔曲线
+- ```animation-timing-function: cubic-bezier(x1, y1, x2, y2)```
+- 运动快慢由斜率```k```决定，```k1 = y1/x1```，```k2 = y2/x2```
+- ```k > 0```快，```k < 0```慢
+
+
 
 ---
 ### 其它问题
