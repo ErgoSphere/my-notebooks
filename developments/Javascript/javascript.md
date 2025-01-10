@@ -1,5 +1,11 @@
 ###  普通函数与箭头函数
-- 箭头函数没有**自己的**this，只从自己作用域链的上一层继承this。
+- 箭头函数没有**自己的**this，只从自己作用域链的上一层继承this。``call``、``apply``和``bind``等方法不能改变箭头函数中``this``的指向
+  ```js
+  var id = 'apple'
+  let func = () => { console.log(this.id) }
+  func() // 'apple'
+  func.call({id: 'pineapple'})  // 'apple'
+  ```
 - 普通函数则引入了bind方法来设置函数this值
     ```js
     function Person () {
@@ -88,9 +94,13 @@ typeof BigInt("1") = "bigint"
 - 浅拷贝：指两个js对象指向同一个内存地址，其中一个改变会影响另一个。浅拷贝只会拷贝一层，深层的引用类型改变还是会受到影响。
     ```js
     let oldObj = {1: 'a', 2: 'b'}
+    let oldObj2 = {1: 'c', 3: 'd'}
     let newObj1 = Object.assign({}, oldObj)
     let newObj2 = {...oldObj}
+    // merge object
+    let newObj3 = {...oldObj, ...oldObj2} // {1: 'c', 2: 'b', 3: 'd'}
     // array slice 
+    let arr = [...arr1, ...arr2]
     ```
 - 深拷贝：指复制后的新对象重新指向一个新的内存地址，两个对象改变互不影响。
     ```js
@@ -99,6 +109,7 @@ typeof BigInt("1") = "bigint"
     console.log(JSON.parse(JSON.stringify(oldObj)))
     const deep_clone = obj => {
       let ret, k, b;
+      // instanceof 检测构造函数的prototype属性是否出现在某个实例对象原型链上
       if ((b = obj instanceof Array) || obj instanceof Object) {
         ret = b ? [] : {};
         for (k in obj) {
@@ -285,7 +296,7 @@ document.addEventListener("visibilitychange", function(ev) {
    - Node应用模块采用了此种方式，每个文件为一个模块，有自己的作用域，文件内变量、函数、类私有，在服务器端是同步加载，浏览器端需要提前编译打包 browserify
    - 不会污染全局作用域
    - **在运行时加载函数**，只在运行能确定依赖关系及输入输出
-   - 模块只在第一次加载时运行，运行结果缓存，多次加载需要清缓存()
+   - 模块只在第一次加载时运行，运行结果缓存，多次加载需要清缓存
    - 模块加载顺序按在代码中出现的顺序
    - 输入为被输出值的拷贝，输出后模块内部变化无法再影响此值(值传递或引用传递)
     ``` js
@@ -499,6 +510,8 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
     Content-Security-Policy:img-src https://*
     //允许任何来源
     Content-Security-Policy:child-src 'none'
+    //禁止内部包含的脚本代码使用eval()，但如果脚本代码创建了worker，这个worker上下文中执行的代码是可以使用eval()的
+    Content-Security-Policy:script-src 'self'
     ```
     2. meta标签
     ```html
@@ -1066,6 +1079,7 @@ let o3 = Object.assign({}, {
 ---
 ### <span id="requestAnimationFrame">window.requestAnimationFrame使用</span>
 - 最平滑的动画最佳循环间隔为<code>1000ms/显示器刷新频率</code>(例：60Hz)
+- 回调函数在下一次``重绘``前由更新动画帧调用
 - 会将每一帧中的所有DOM操作集中起来，在一次重绘或回流中就完成（**隐藏或不可见元素除外**），时间间隔紧跟浏览器刷新频率
 - 应用：渲染几万条数据不卡住界面
   ```html
@@ -1205,6 +1219,11 @@ function fn () { // 内部函数
   return a
 }
 ```
+- ``var``声明的变量为全局变量，且会将该变量添加为全局对象（浏览器为window，Node为global）的属性
+  ```js
+  var addedPro = 1
+  window.addedPro // 1
+  ```
 
 ---
 ### dom attribute vs dom property
@@ -1257,3 +1276,46 @@ if ( typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.reques
   deviceListener()
 }
 ```
+
+---
+### Web Worker
+- 检测浏览器是否支持worker：``typeof Worker !== undefined``
+
+---
+### 操作符的隐式转换
+- ``+``两边至少有一个``String``变量时，两边会隐匿转换为字符串；其他情况则两边会转换为数字
+  ```js
+  1 + '23' // '123'
+  1 + false // 1
+  '1' + false // '1false'
+  false + true // 1
+  1 + Symbol() // uncaught typeerror
+  ```
+- 非加法运算符，只要有一边为数字，则另一边就会被转为数字
+- ``==``两边值都转为``Number``类型
+  ```js
+  3 == true // => 3 == 1 => false
+  '0' == false // 0 == 0 => true
+  ```
+- ``<``,``>``字符串按字母表顺序比较，其他情况转为数字再比较
+  ```js
+  'a' < 'b' // true
+  '12' < 13 // true
+  false > -1 // true
+  ```
+- 对象会被``ToPrimitive``转换为基本类型再转换
+  ```js
+  let a = {}
+  a > 2 // false
+  // 以下为执行过程
+  a.valueOf() // ToPrimitive默认type为number，因此先valueOf
+  a.toString() // '[object Object]'
+  Number(a.toString()) // NaN
+  NaN > 2 // false
+  ```
+  例2:
+  ```js
+  let a = {name: 'Jack'}
+  let b = {age: 18}
+  a + b // '[object Object][object Object]'
+  ```
