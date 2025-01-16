@@ -1319,3 +1319,32 @@ if ( typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.reques
   let b = {age: 18}
   a + b // '[object Object][object Object]'
   ```
+
+---
+### 展开运算符(...)
+- 字符串转单字数组
+  ```js
+  let str = 'mysksksks'
+  str.split('') // ['m', 'y', 's', 'k', 's', 'k', 's', 'k', 's']
+  [...str] // ['m', 'y', 's', 'k', 's', 'k', 's', 'k', 's']
+  ```
+  
+---
+### 尾调用
+- 函数最后一步调用另一个函数
+- 因为在函数中调用另一个函数时会保留当前执行的上下文，再新建另一个执行上下文存入栈中。使用尾调用时因为是函数最后一步可以不必保留当前执行上下文，节省了内存
+- ES6的尾调用只在严格模式下开启
+
+---
+### ``for...of(ES6)`` vs ``for...in``
+- ``for...of``遍历键值；``for...in``遍历键值
+- ``for...in``遍历整个原型链，性能差；``for...of``只遍历当前对象
+- 对数组的遍历，``for...in``返回所有可枚举属性；``for...of``只返回数组下标对应属性值
+
+---
+### ``fetch`` vs ``XMLHttpRequest`` ([ref](https://www.greatfrontend.com/questions/quiz/what-are-the-differences-between-xmlhttprequest-and-fetch))
+- ``fetch``提供链式promise，``XMLHttpRequest``使用回调函数（事件驱动）
+- ``fetch``提供可拓展性更强的headers和request body，可用catch抛出更清晰的错误处理
+- 取消请求：``fetch``使用``AbortController``，``XMLHttpRequest``则提供了``abort``来处理
+- ``XMLHttpRequest``有更好的进度追踪
+- ``XMLHttpRequest``仅可在浏览器中使用，不能在Node环境中运行；而``fetch``可以运行在任何现代JS环境中
