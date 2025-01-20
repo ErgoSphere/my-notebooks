@@ -282,7 +282,7 @@ document.addEventListener("visibilitychange", function(ev) {
     ```
 
 ---
-###  模块化
+### 模块化
 - ES6, CommonJS, CMD, AMD
 - 模块内部数据与实现是私有的，向外部暴露一些接口方法与外部其它模块通信
 - 优势：减少命名空间污染，更好的分离，按需加载，高复用性，高可维护性
@@ -519,13 +519,13 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
     ```
 
 ---
-###  事件流传播过程
+### 事件委托、事件流传播过程
 - 事件捕获 → 事件目标 → 事件冒泡
 - ```document.addEventListener(..., capture)```, capture为boolean， true为捕获，false为冒泡
 - 不支持冒泡的事件
   - focus, blur(element)
   - mouseenter, mouseleave(element)
-  - resize(window)
+  - resize, scroll(window)
   - load, unload(window)
 - 中断事件传播
   - addEventListener(eventName, callback, {once: true})
@@ -713,7 +713,7 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
 ---
 ### 闭包作用
 1. 使外部能够读取到函数内部的变量
-2. 让变量的值命始终保持在内存中
+2. 让变量的值始终保持在内存中
   ```js
   function f1 () {
     var n = 999
@@ -840,21 +840,23 @@ let o3 = Object.assign({}, {
 
 ---
 ### 函数调用方式
-1. 一般形式的函数调用: **this表示全局对象window**
+1. 一般形式的函数调用: 在浏览器中，this表示全局对象，即window，如在严格模式下，this为undefined
    ```js
    function foo () {
      console.log(this)
    }
-   foo() //window
+   foo() //non-strict: window. strict: undefined
    ```
 2. 作为对象的方法调用: 方法一定要要宿主对象引导调用，即**对象.方法（参数）**。this表示引导方法的对象（宿主对象）
    ```js
    function foo () {
      console.log(this)
    }
-   let o = {}
+   let o = {name: 'banana'}
    o.fn = foo
-   o.fn() //o
+   o.fn() // {name: 'banana', fn: f}
+   const fnStandalone = o.fn // this丢失上下文，不再提向o
+   fnStandalone() // non-strict: window. strict: undefined
    ```
    ```js
    var length = 10
@@ -881,7 +883,16 @@ let o3 = Object.assign({}, {
    foo.apply(o, [123, 567]) //以o为上下文执行apply
    foo.call(null, 123, 456)
    ```
-4. new间接调用（构造器模式）：this指函数本身
+4. bind：使用明确的this值生成一个新函数
+    ```js
+    function showThis () {
+      console.log(this)
+    }
+    const obj = {name: 'Banana'}
+    const boundFunc = showThis.bind(obj)
+    boundFunc() // {name: 'Banana'}
+    ```
+5. new间接调用（构造器模式）：this指函数本身
    ``` js
    var Person = function() {
      this.name = "码农"
@@ -943,6 +954,21 @@ let o3 = Object.assign({}, {
    console.log(p1.name) //李四
    console.log(p2.name) //张三
    ```
+6. class
+    ```js
+    class Person {
+      constructor(name) {
+        this.name = name
+      }
+      showThis() {
+        console.log(this)
+      }
+    }
+    const person = new Person('Banana')
+    person.showThis() // Person {name: Banana}
+    const showThisStandalone = person.showThis
+    showThisStandalone() // undefined, 因为类仅在严格模式下执行
+    ```
 
 ---
 ### 跨域方法
@@ -1319,6 +1345,20 @@ if ( typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.reques
   let b = {age: 18}
   a + b // '[object Object][object Object]'
   ```
+
+---
+### ``==`` vs ``===``
+- ``==``强制类型转换， ``===``不强制
+- ``===``同时比较值和类型，``==``不是
+```js
+null == undefined // true
+[] == false // true
+1 == [1] // true
+0 == ''// true
+0 == '0' // true
+'' == '0' // false
+```
+
 
 ---
 ### 展开运算符(...)
