@@ -711,6 +711,32 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
     - Vary：<code>当前请求 Vary = 缓存请求头 Vary = 缓存响应头 Vary</code>，才使用缓存的响应。<code>Vary: User-Agent</code>可避免缓存服务器错误地把移动端内容输出到桌面端
 
 ---
+### 浏览器存储
+- ``cookie``
+  - 携带在每个向服务器的请求中，适用于存储和服务器交换的数据
+  - 可以设置为持续时间或者基于session
+  - 明确区分域名
+  - 容量小（4KB左右）
+  - 可以通过设置为``HttpOnly``来防止XSS攻击；也可通过设置``Secure``来保证仅使用HTTPS来发送cookie
+- ``sessionStorage``
+  - 适用于有时效性的存储
+  - 当当前标签和窗口关闭时会被清理
+  - 存储容量``cookie`` < ``sessionStorage`` < ``localStorage``
+- ``localStorage``
+  - 适用于长期存储，浏览器关闭后仍保留
+  - 和同一域名内所有窗口标签所共有
+  - 三者之中拥有最大的存储容量（取决于不同浏览器）
+- ``IndexDB``
+
+| 存储       | Cookie                | sessionStorage | localStorage   |
+|----------|-----------------------|----------------|----------------|
+| 初始化      | 客户端/服务器端(set-cookie)  | 客户端        | 客户端     |
+| 生命周期     | 自设定                   | 标签页/窗口关闭  | 手动删除    |
+| 是否向服务器发送 | 是，通过请求头的cookie        | 否     | 否            |
+| 数据访问     | 同域窗口/标签页              | 同域窗口/标签页  | 同一标签页 |
+| 安全性      | JS不能个性Http不涉及Only的cookie | 不涉及           | 不涉及    |
+
+---
 ### 闭包作用
 1. 使外部能够读取到函数内部的变量
 2. 让变量的值始终保持在内存中
@@ -873,7 +899,7 @@ let o3 = Object.assign({}, {
    obj.method(fn, 1)// 输出 10, 2
    obj.method(fn, 1, 2, 3) //输出 10, 4
    ```
-3. call & apply(上下文调用模式): call(参数list)，apply(参数对象)
+3. call & apply(上下文调用模式): call(每一个参数都是独立的)，apply(参数对象数组)
    ```js
    function foo (num1, num2) {
      return num1 + num2
@@ -882,6 +908,7 @@ let o3 = Object.assign({}, {
    foo.apply(null, [123, 567]) //以window为上下文执行apply
    foo.apply(o, [123, 567]) //以o为上下文执行apply
    foo.call(null, 123, 456)
+   foo.call(null, ...[123, 456]) // ES6
    ```
 4. bind：使用明确的this值生成一个新函数
     ```js
