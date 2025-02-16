@@ -67,10 +67,6 @@ DEMO: [https://github.com/ErgoSphere/vue-virtual-scroller](https://github.com/Er
  8. destroyed: 当前实例和子实例销毁完成后（服务端渲染期不可用）
 
 ---
-### Vuex
-- 2.0: 通过Vue.mixin对在beforeCreated的时候注入个$store对象
-
----
 ### [创建对象生成原型链](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Inheritance_and_the_prototype_chain)
 
 ---
@@ -113,11 +109,6 @@ new Vue({
 - CDN引入js和css
 - webpack配置external，不打包第三方库
 - 配置DLLPlugin和DLLReferencePlugin，将引用依赖提取
-
----
-### Vue切换路由时保存草稿功能实现
-- beforeRouteLeave
-- keep-alive
 
 ---
 ### Vue的模板语法引擎？
@@ -169,68 +160,6 @@ export default {
    - 可以直接监听对象非属性， 可直接监听数组变化
    - 返回的是新对象，可以只操作新对象达到目的，Object.defineProperty只能遍历对象属性进行更改
 2. Object.defineProperty: 兼容性更佳
-
----
-### vue-router实现原理，配置history mode和hash mode方式
-- **hash mode**
-  - hash mode是vue-router的默认模式，hash指url描点，当描点发生变化时，浏览器只修改访问历史记录，不重新获取页面，根椐描点值渲染指定的dom
-  - 原理：
-    - 改变描点: <code>location.hash = "/hashpath"</code>
-    - 监听描点变化：
-     ```js
-      window.addEventListener("hashchange", () => {
-       const hash = window.location.hash.substr(1)
-      }) 
-     ```
-- **history mode**
-  - 原理：
-    - 改变url: <code>pushState</code>或<code>replaceState</code>, url变化，浏览历史变化，但不向后台发送请求
-    - 监听url变化：<code>popstate event</code>
-      ```js
-      window.addEventListener("popstate", () => {
-       const path = window.location.pathname
-      })
-      ```
-- **服务端支持**
-  - 使用hash mode时，手动刷新浏览器可正常显示，history mode下刷新可能会出现问题，服务器端会查找是否有相匹配的html文件，在单页应用下，服务器端只有一个<code>index.html</code>, 此时匹配不到，会提示404。因此需要服务端对history进行支持。
-    - node服务器
-      ```js
-      const path = require("path")
-      const history = require("connect-history-api-fallback")
-      const express = require("express")
-      const app = express()
-      app.use(history()) // 注册history模式中间件
-      app.use(express.static(path.join(__dirname, '../web'))) //处理表态资源中间件，假设网站根目录../web
-      app.listen(1122, () => {
-       console.log("service start, port 1122")
-      })
-      ```
-    - nginx代理：修改配置文件添加history mode support
-     ```
-     location / {
-      root html;
-      index index.html inde.htm;
-      #尝试读取当前请求路径（$uri），如果读不到则读$uri/这件文件夹下的首页
-      #都读不到则返回根目录中的index.html
-      try_files $uri $uri/ /index.html;
-     }
-     ```
-- 渲染router-view组件
-  1. 通过Vue.observable在router实例上创建一个保存当前路由的监控对象current
-  2. 当浏览器地址变化时，修改current
-  3. 在<code>router-view</code>组件中监听current变化，当current变化时获取用户注册的相应component，并利用h()将component渲染为vnodes，更新页面视图
-- 使用
- ```js
- //3.x
- const router = new VueRouter({
-  mode: "history"
- })
- //4.x
- import { createRouter, createWebHashHistory, createWebHistory } from "vue-router"
- const router = createRouter({
-  history: createWebHistory() || createWebHashHistory()
- })
- ```
 
 ---
 ### vue性能优化

@@ -61,7 +61,7 @@ app.on('ready', () => {
 - 如果需要进多窗口共享的话, 则在主进程```main.js/index.js```内引入```store```文件
   ```js
   // main.js
-  import { app, BrowserWindow, ipcMain } from 'electron'
+  import { app, BrowserWindow, ipcMain } from 'developments/Electron/Electron'
   import './renderer/store'
   ```
 
@@ -101,50 +101,54 @@ let mainWindow = new BrowserWindow({
 })
 ```
 通信组件页
+
 ```vue
+
 <template>
   <!--nodeintegration: allow use node in html-->
   <webview src="../static/b.html" nodeintegration></webview>
 </template>
 <script>
-import { ipcRenderer } from 'electron'
-export default {
-  data () {
-    return {
-      webview: null
-    }
-  },
-  
-  mounted () {
-    this.webviewInit()
-  },
-  
-  methods: {
-    webviewInit: function () {
-      let vm = this
-      vm.webview = document.querySelector('webview')
-      vm.webview.addEventListener('dom-ready', () => {
-        vm.webview.send('msg', 'wow') //向 webview发送信息 
-      })
-      vm.webview.addEventListener('ipc-message', event => { //接收webview的信息 
-        if (event.channel === 'message') {
-          
-        }
-      })
+  import {ipcRenderer} from 'developments/Electron/Electron'
+
+  export default {
+    data() {
+      return {
+        webview: null
+      }
+    },
+
+    mounted() {
+      this.webviewInit()
+    },
+
+    methods: {
+      webviewInit: function () {
+        let vm = this
+        vm.webview = document.querySelector('webview')
+        vm.webview.addEventListener('dom-ready', () => {
+          vm.webview.send('msg', 'wow') //向 webview发送信息 
+        })
+        vm.webview.addEventListener('ipc-message', event => { //接收webview的信息 
+          if (event.channel === 'message') {
+
+          }
+        })
+      }
     }
   }
-}
 </script>
 ```
 用于```webview```的HTML页面必须放在```static```下且在```package.json```以```extraResource```的形式引用打包
+
 ```html
 <!-- static/b.html -->
 <script>
-   const { ipcRenderer } = require('electron')
-   ipcRenderer.on('msg', (e, str) => {
-      console.log(str === 'wow')
-      ipcRenderer.sendToHost("message")  //向webview所在页面发送信息
-   })
+  const {ipcRenderer} = require('developments/Electron/Electron')
+  ipcRenderer.on('msg', (e, str) => {
+    console.log(str === 'wow')
+    ipcRenderer.sendToHost("message")  //向webview所在页面发送信息
+  })
 </script>
 ```
 
@@ -156,14 +160,16 @@ export default {
 mainWindow.webContents.openDevTools()
 ```
 - 5.0以下：渲染进程开启
+
 ```js
 // renderer/main.js
-import { remote } from 'electron'
+import {remote} from 'developments/Electron/Electron'
+
 remote.globalShortcut.register('CommandOrControl+Shift+K', () => {
-    remote.BrowserWindow.getFocusedWindow().webContents.openDevTools()
+  remote.BrowserWindow.getFocusedWindow().webContents.openDevTools()
 })
 window.addEventListener('beforeunload', () => {
-    remote.globalShortcut.unregisterAll()
+  remote.globalShortcut.unregisterAll()
 })
 ```
 
@@ -197,23 +203,25 @@ function exitProgram () {
 
 ---
 ### 自动更新
+
 ```js
-import { autoUpdater } from 'electron-updater'
-function undateHandle () {
-    autoUpdater.setFeedURL("")
-    autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName) => {
-        const dialog = require('electron').dialog
-        const dialogOpts = {
-            type: '更新提示',
-            buttons: ['立即重启', '稍后重启'],
-            title: '软件更新',
-            message: process.platform === 'win32' ? releaseNotes : releaseName,
-            detail: '当前检测到可用更新包，是否立即重启APP进行软件更新？'
-        }
-        dialog.showMessageBox(dialogOpts, response => {
-            if (response === 0) autoUpdater.quitAndInstall()
-        })
+import {autoUpdater} from 'electron-updater'
+
+function undateHandle() {
+  autoUpdater.setFeedURL("")
+  autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName) => {
+    const dialog = require('developments/Electron/Electron').dialog
+    const dialogOpts = {
+      type: '更新提示',
+      buttons: ['立即重启', '稍后重启'],
+      title: '软件更新',
+      message: process.platform === 'win32' ? releaseNotes : releaseName,
+      detail: '当前检测到可用更新包，是否立即重启APP进行软件更新？'
+    }
+    dialog.showMessageBox(dialogOpts, response => {
+      if (response === 0) autoUpdater.quitAndInstall()
     })
-    autoUpdater.checkForUpdates()
+  })
+  autoUpdater.checkForUpdates()
 }
 ```

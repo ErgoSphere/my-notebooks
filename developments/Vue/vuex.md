@@ -6,3 +6,7 @@
     - cookie: 生命周期只存在于设置的过期时间之前，即使窗口或浏览器关闭。存放数据大小限制（浏览器限制），不能储存大数据且不易读取。
 - vue作为SPA在一个页面上跳转路由，sessionStorage较为合适
     - sessionStorage可以保证打开页面时sessionStorage数据为空
+
+---
+### vuex实现方式
+- 通过``Vue.mixin``在``beforeCreated``的时候注入``$store``对象

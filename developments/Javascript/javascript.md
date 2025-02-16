@@ -1,3 +1,40 @@
+###  JS数据类型 ([ref](https://zhuanlan.zhihu.com/p/95534245))
+1. 基本数据类型：Undefined, Null, Number, String, Boolean, Symbol(ES6), BigInt(ES11)
+2. 复杂数据类型：Object
+```
+typeof Number = "number"
+typeof NaN = "number"
+typeof String = "string"
+typeof Object = "object"
+typeof Array = "object"
+typeof null = "object"
+typeof Function = "function"
+typeof Undefined = "undefined"
+typeof Boolean = "boolean"
+typeof Symbol = "symbol"
+typeof BigInt("1") = "bigint"
+```
+
+---
+###  Symbol
+1. 不使用new是因为通过new实例化的结果为object对象
+    ```js
+    const s = Symbol() // typeof s = 'symbol'
+    ```
+2. 即使传入相同的参数生成的symbol值也不一样（独有）
+    ```js
+    const foo = Symbol('foo')
+    const bar = Symbol('foo')
+    console.log(foo === bar) // false
+    ```
+3. 使用Symbol.for可校验上下文是否存在使用该方法且相同参数创建的symbol值
+    ```js
+    const s1 = Symbol.for('foo')
+    const s2 = Symbol.for('foo')
+    console.log(s1 === s2) // true
+    ```
+
+---
 ###  普通函数与箭头函数
 - 箭头函数没有**自己的**this，只从自己作用域链的上一层继承this。``call``、``apply``和``bind``等方法不能改变箭头函数中``this``的指向
   ```js
@@ -53,41 +90,65 @@
     ```
 
 ---
-###  JS数据类型 ([ref](https://zhuanlan.zhihu.com/p/95534245))
-1. 基本数据类型：Undefined, Null, Number, String, Boolean, Symbol(ES6), BigInt(ES11)
-2. 复杂数据类型：Object
+### ``function Person()`` vs ``const person = Person()`` vs ``const person = new Person()``
+- ``function Person()``：定义一个函数，可以当一个常规函数或者构造器(constructor)来使用
+- ``const person = Person()``：调用 ``Person()``作为常规函数，当没有返回值时，因为没有构造函数，所以会导致结果为``undefined``
+- ``const person = new Person()``：创建``Person()``的新实例，使用其作为构造器
+```js
+function Person(name) {
+  this.name = name
+}
+
+const person = Person('Asshole')
+console.log(person) // undefined
+console.log(person.name) // Uncaught TypeError: Cannot read property 'name' of undefined
+
+const person2 = new Person('Mark')
+console.log(person) // Person {name: 'Mark'}
+console.log(person) // 'Mark'
+// person2的new过程替代
+const person3 = Object.create(Person.prototype) // 以Person.prototype作为原型创造新对象
+Person.call(person3, 'Luke')
 ```
-typeof Number = "number"
-typeof NaN = "number"
-typeof String = "string"
-typeof Object = "object"
-typeof Array = "object"
-typeof null = "object"
-typeof Function = "function"
-typeof Undefined = "undefined"
-typeof Boolean = "boolean"
-typeof Symbol = "symbol"
-typeof BigInt("1") = "bigint"
+
+| 类目 | ``function Person()`` | ``const person = Person()`` | ``const person = new Person()`` |
+|----|-------------------|------------------------|-----------------------------------|
+| 类型 | 函数定义   | 函数调用                   | 构造器调用                             |
+| 用法 | 定义函数    | 将``Person()``作为常规函数调用   | 使用``Person()``作为构造器创建新实例  |
+| 实例 | 不创建      | 不创建                    | 创建                                |
+
+---
+### ``function foo()`` vs ``var foo = function() {}``
+- ``function foo()``是函数定义，会有函数提升
+```js
+foo() // 'FOOOOOOO'
+function foo() {
+  console.log('FOOOOOOO')
+}
+```
+- ``var foo = function() {}``是函数表达式，无函数提升（但``var``会变量提升）; 当表达式内的函数命名时，仅能从函数内访问自身，否则会导致报错或者undefined
+```js
+foo() // Uncaught TypeError: foo is not a function
+var foo = function () {
+  console.log('FOOOOOO')
+}
+const myFunc = function namedFunc() {
+  console.log(namedFunc) // 正常执行
+}
+console.log(namedFunc) // undefined
 ```
 
 ---
-###  Symbol
-1. 不使用new是因为通过new实例化的结果为object对象
-    ```js
-    const s = Symbol() // typeof s = 'symbol'
-    ```
-2. 即使传入相同的参数生成的symbol值也不一样（独有）
-    ```js
-    const foo = Symbol('foo')
-    const bar = Symbol('foo')
-    console.log(foo === bar) // false
-    ```
-3. 使用Symbol.for可校验上下文是否存在使用该方法且相同参数创建的symbol值
-    ```js
-    const s1 = Symbol.for('foo')
-    const s2 = Symbol.for('foo')
-    console.log(s1 === s2) // true
-    ```
+### 匿名函数
+- 可防止变量污染
+```js
+(function () {
+  var x = 10
+  console.log(x) // 10
+})()
+console.log(typeof x) // undefined
+```
+
 
 ---
 ###  深拷贝和浅拷贝
@@ -342,18 +403,6 @@ document.addEventListener("visibilitychange", function(ev) {
    - CommonJS和AMD的结合，加载异步，使用时才执行，用于浏览器端（例sea.js）
 
 ---
-###  安全防范 [Ref](https://juejin.cn/post/6844904020562165773)
-1. XSS注入
-   - CSP开启白名单：设置HTTP Header 的 Content-Security-Policy
-   - 使用转义字符
-2. CSRF
-   - Get请求不对数据修改
-   - 不让第三方访问到用户cookie
-   - 阻止第三方请求接口
-   - 请求时附带证信息，如验证码或者 csrf token
-3. 点击劫持
-
----
 ###  cacheStorage 和 cache
 - **cacheStorage**: 类似mango, 管理所有cache
 - **cache**: 类似mango内的db
@@ -497,26 +546,6 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
 - URL：统一资源定位器，http://www.11.com:9000/aaa, schema://host:port/path, schema有http, ftp, gopher等
 - URN：统一资源命名：mailto:java-net@java.sun.com
 - URL和URN是URI的子集
-
----
-###  内容安全策略CSP
-- 本质为建立白名单，只需配置规则，拦截则由浏览器自身实现，可以通过这种方式减少xss攻击
-- 开启：
-    1. 设置http request header的Content-Security-Policy
-    ```
-    //只许加载本站资源
-    Content-Security-Policy:default-src 'self'
-    //只许加载HTTPS协议的图片
-    Content-Security-Policy:img-src https://*
-    //允许任何来源
-    Content-Security-Policy:child-src 'none'
-    //禁止内部包含的脚本代码使用eval()，但如果脚本代码创建了worker，这个worker上下文中执行的代码是可以使用eval()的
-    Content-Security-Policy:script-src 'self'
-    ```
-    2. meta标签
-    ```html
-    <meta http-equiv="Content-Security-Policy" />
-    ```
 
 ---
 ### 事件委托、事件流传播过程
@@ -848,20 +877,57 @@ console.log(5)
 
 ---
 ### JS创建对象的几种方法
+- 直接构成使用
 ```js
-let o = new Object()
-let o2 = {
+let o = {
   a: 1,
   b2
 }
-let o3 = Object.assign({}, {
-  a: 1,
-  b: 1
-})
-//工厂模式
-//构造函数
-//原型链
+```
+- ``Object()``构造器
+```js
+const o = new Object()
+o.a = 1
+```
+- 原型链方式：以现有对象作为原型生成新对象
+```js
+const obj = {a:  1}
+const o1 = Object.create(obj)
 
+const objPrototype = {
+  show () {
+    console.log(`a is ${this.a}`)
+  }
+}
+const o2 = Object.create(objPrototype)
+o2.a = 1
+o2.show() // a is 1
+```
+- ES5 Class
+```js
+class Person {
+  constructor(name, age){
+    this.name = name
+    this.age = age
+  }
+  greet = function () {
+    console.log(`My name is ${this.name} and I'm ${this.age}`)
+  }
+}
+const person = new Person('Luke', 15)
+person.greet() // My name is Luke and 15
+```
+- 构造函数
+```js
+function Person (name, age){
+  this.name = name
+  this.age = age
+  this.greet = function () {
+    console.log(`My name is ${this.name} and I'm ${this.age}`)
+  }
+}
+const person = new Person('Luke', 15)
+person.greet() // My name is Luke and 15
 ```
 
 ---

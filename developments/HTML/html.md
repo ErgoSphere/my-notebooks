@@ -17,3 +17,47 @@
 | 处理方式  | 停止页面处理 | 并行页面处理 | 并行页面处理 |
 | 执行顺序  | 按引入顺序  | 无序   | 按引入顺序 |
 | DOM依赖 | 否      | 否   | 等待DOM解析完毕    |
+
+---
+###  内容安全策略CSP
+- 本质为建立白名单，只需配置规则，拦截则由浏览器自身实现，可以通过这种方式减少xss攻击
+- 开启：
+   - 设置http request header的``Content-Security-Policy``
+    ```
+    //只许加载本站资源
+    Content-Security-Policy:default-src 'self'
+    //只许加载HTTPS协议的图片
+    Content-Security-Policy:img-src https://*
+    //允许任何来源
+    Content-Security-Policy:child-src 'none'
+    //禁止内部包含的脚本代码使用eval()，但如果脚本代码创建了worker，这个worker上下文中执行的代码是可以使用eval()的
+    Content-Security-Policy:script-src 'self'
+    ```
+    - 使用``meta``标签
+    ```html
+    <meta http-equiv="Content-Security-Policy" />
+    ```
+
+---
+###  安全防范 [Ref](https://juejin.cn/post/6844904020562165773)
+1. XSS注入
+    - CSP开启白名单：设置HTTP Header 的 Content-Security-Policy
+    - 使用转义字符
+2. CSRF
+    - Get请求不对数据修改
+    - 不让第三方访问到用户cookie或者使用``SameSite cookies``
+      ```
+      // Strict: 仅允许第一方发送cookie
+      // Lax：cookie仅在url定向时携带（如点击一个link），在通常的跨域请求中不发送（如加载图片）
+      // None：cookie在任何情况下都会被发送
+      Set-Cookie: sessionId=abc234; SameSite=Strict
+      ```
+    - 阻止第三方请求接口
+    - 请求时附带证信息，如验证码或者 csrf token
+    - 指定允许跨域的资源
+      ```
+      Access-Control-Allow-Origin: https://trustedwebsite.com
+      ```
+3. 点击劫持
+
+---
