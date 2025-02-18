@@ -408,31 +408,7 @@ document.addEventListener("visibilitychange", function(ev) {
 - **cache**: 类似mango内的db
 
 ---
-###  HTTP/HTTPS([ref](https://juejin.cn/post/6844903471565504526))
-1. **HTTP**：超文本转输协议，明文方式发送，无数据加密，不适合传输敏感信息。是TCP的一种
-2. **HTTPS**：安全套接字层超文本转输协议，在HTTP的基础上加入了SSL协议，SSL（security sockets layer）依靠证书难证服务器身份，为通信加密。
-    - 作用：建立信息安全通道，确认网站真实性, 客户端TLS来解析证书
-    - 优点：安全性，谷歌SEO针对HTTPS有排名提升
-    - 缺点：会使页面加载时间延长至50%，增加10%到20%的耗电，影响缓存，增加数据开销和功耗，加密范围比较有限，SSL证书信用链体系不安全，SSL需要绑定IP但不能在同一IP上绑定多个域名
-    - 流程：client将自己支持的加密规则发送 -> server从中选出一组算法将自己身份信息以证书形式发回，内含网站地址，加密公钥，证书颁发机构
-3. HTTP和HTTPS区别：
-    - HTTPS需要到ca申请证书，免费较少
-    - HTTP明文转输，HTTPS加密
-    - 两者使用了完全不同的连接方式，端口不一样，HTTP为80，HTTP为443
-    - HTTP连接简单无状态， HTTPS更安全
 
----
-####  TCP握手(3)/挥手(4)：
-1. client发送报文1（询问）
-2. server回应报文2，携带对报文1的回应以及询问client是否做好通讯准备
-3. client发送报文3，回应对server报文2中的询问
-> ---数据传输---
-4. client发送报文4（FIN），用于关闭client到server的传送
-5. server接收后发送报文5（ACK），确认报文4的操作（报文4序号加1）
-6. server关闭连接，发送报文6（FIN）
-7. client对报文5回应，序号加1（ACK）
-
----
 ###  服务器通信
 1. XMLHttpRequest: 可获取任何类型的数据，可支持HTTP外的协议（FTP，file://）
 2. EventSource: 服务器单向推送，一个EventSource实例会对HTTP服务开启持久化连接，以text/event-stream格式发送事件，应用于处理社交媒体更新，新闻提要等
@@ -582,11 +558,7 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
 由浏览器限制行为，超过浏览器限制出现堆栈溢出
 
 ---
-###  html渲染和canvas渲染性能
-- DOM渲染更易于构建复杂场景，但需要性能成本，需要经过层层规则计算（保留模式）
-- Canvas不储存额外的渲染信息，允许直接发送绘图命令到GPU，直接由显卡渲染（直接模式）
 
----
 ###  Uint8Array 和 Uint8ClampedArray
 - 皆常用于canvas
 - Uint8ClampedArray主要用于canvas特殊场景，如imageData
@@ -687,8 +659,86 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
       ```
 
 ---
+###  HTTP/HTTPS([ref](https://juejin.cn/post/6844903471565504526))
+1. **HTTP**：超文本转输协议，明文方式发送，无数据加密，不适合传输敏感信息。是TCP的一种
+2. **HTTPS**：安全套接字层超文本转输协议，在HTTP的基础上加入了SSL协议，SSL（security sockets layer）依靠证书难证服务器身份，为通信加密。
+    - 作用：建立信息安全通道，确认网站真实性, 客户端TLS来解析证书
+    - 优点：安全性，谷歌SEO针对HTTPS有排名提升
+    - 缺点：会使页面加载时间延长至50%，增加10%到20%的耗电，影响缓存，增加数据开销和功耗，加密范围比较有限，SSL证书信用链体系不安全，SSL需要绑定IP但不能在同一IP上绑定多个域名
+    - 流程：client将自己支持的加密规则发送 -> server从中选出一组算法将自己身份信息以证书形式发回，内含网站地址，加密公钥，证书颁发机构
+3. HTTP和HTTPS区别：
+    - HTTPS需要到ca申请证书，免费较少
+    - HTTP明文转输，HTTPS加密
+    - 两者使用了完全不同的连接方式，端口不一样，HTTP为80，HTTP为443
+    - HTTP连接简单无状态， HTTPS更安全
+
+---
+###  TCP握手(3)/挥手(4)：
+1. client发送报文1（询问）
+2. server回应报文2，携带对报文1的回应以及询问client是否做好通讯准备
+3. client发送报文3，回应对server报文2中的询问
+> ---数据传输---
+4. client发送报文4（FIN），用于关闭client到server的传送
+5. server接收后发送报文5（ACK），确认报文4的操作（报文4序号加1）
+6. server关闭连接，发送报文6（FIN）
+7. client对报文5回应，序号加1（ACK）
+
+---
+### HTTPS加密方式
+- 加密方式通过``SSL/TLS``协议实现，核心是结合``非对称加密``和``对称加密``的混合加密机制，并依赖``数字证数``验证身份
+  - ``非对称加密``：安全性高，速度慢，交换密钥并验证服务器身份。算法如``RSA``、``ECDSA``、``DH``(密钥交换)
+    - 流程：
+      1. 客户端发起请求：浏览器向服务器发送支持的``SSL/TLS``版本和加密算法列表
+      2. 服务器返回证书：
+         - 服务器发送数字证书，含公钥、域名、颁发机构、有效期等信息
+         - 证书由CA（证书颁发机构）签发，浏览器内置信息的CA根证书
+      3. 客户端验证证书：
+         - 检查证书上是否过期、域名是否匹配、颁发机构是否受信任
+         - 用CA的公钥验证证书的数字签名，确保证书未被篡改
+  - ``对称加密``：速度快，加密大量数据，即加密实际传输的HTTP数据。算法如``AES-256``、``ChaCha20``（高效加密数据）
+    - 流程：
+      1. 生成会话密钥：客户端生成一个随机数作为对称加密的会话密钥（如AES密钥）
+      2. 加密会话密钥：用服务器的公钥（来自证书）加密会话密钥，发送给服务器
+      3. 服务器解密密钥：服务器用私钥解密，获取会话密钥
+      4. 对称加密通信：双方用会话密钥加密后续数据传输
+- 完整HTTPS握手流程
+  1. 客户端发送支持的加密套件和随机数
+  2. 服务器选择加密套件，发送证书和随机数
+  3. 客户端验证证书，生成会话密钥，并用服务器公钥加密（非对称加密）发送
+  4. 双方确认使用对称加密，完成握手
+  5. 后续数据通过非对称加密传输
+- 关键安全机制
+  - 证书链验证：确保服务器身份合法
+  - 加密算法协商：使用双方支持的算法
+  - 完整性校验：通过HMAC防止数据篡改
+  
+
+---
 ###  http请求头有哪些内容
 注意点 <code>:method:</code>, <code>:authority:</code>, <code>:path:</code>, <code>:scheme:</code>是因为使用http2协议传输且可以压缩传输体积
+
+---
+### HTTP缓存
+- web缓存发现请求的资源被存储的时候，会拦截请求，返回该资源拷贝，而不会去源服务器重新下载
+- 种类：
+    - 私有缓存（浏览器缓存）
+    - 共享缓存（代理缓存）
+- 常见的HTTP缓存只能存储GET响应
+- 缓存控制
+    - cache-control: 请求头和响应头都支持
+      ```
+      Cache-Control: no-store //不得缓存任何请求和响应内容
+      Cache-Control: no-cache //缓存但重新验证，请求会发至服务器，服务器验证所描述缓存是否过期，未过期则使用本地缓存副本
+      Cache-Control: public
+      Cache-Control: private // 默认
+      Cache-Control: max-age=3156000 //最大缓存时间，距离请求发起的时间秒数
+      Cache-Control: must-revalidate //必须验证
+      ```
+    - Pragma头：效果与<code>Cache-Control: no-cache</code>相同，但不能完全替代，用于兼容
+    - 缓存驱逐：资源过了过期时间后，不会直接删除。当客户端发起一个请求，缓存检索到有对应的已过期副本，会先将此请求附加<code>If-None-Match</code>头，发给服务器，若服务器返回304（响应无实体信息）则表示副本是新鲜的，可以节省一些带宽，如判读已过期，则带有该资源的实体返回
+    - 缓存寿命：先看max-age，没有则看Expires（比较Expires和头Date属性的值），两者都没有则看Last-Modified(<code>寿命 = (Date - Last-Modified) * 10%</code>)
+    - 更新：<code>URL + 版本号/时间戳</code>
+    - Vary：<code>当前请求 Vary = 缓存请求头 Vary = 缓存响应头 Vary</code>，才使用缓存的响应。<code>Vary: User-Agent</code>可避免缓存服务器错误地把移动端内容输出到桌面端
 
 ---
 ###  await在promise reject时是否继续进行，如何处理
@@ -715,29 +765,6 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
 - 持久化存储：只有用户选择清理才会被清理
 - 临时存储：当最近一次使用时Storage limits达到限制时会被自动清理（LRU Policy）
     - LRU Policy: 磁盘空间满时，配额管理器按最近最少使用的源开始清理，直到浏览器不再超过限制
-
----
-### HTTP缓存
-- web缓存发现请求的资源被存储的时候，会拦截请求，返回该资源拷贝，而不会去源服务器重新下载
-- 种类：
-    - 私有缓存（浏览器缓存）
-    - 共享缓存（代理缓存）
-- 常见的HTTP缓存只能存储GET响应
-- 缓存控制
-    - cache-control: 请求头和响应头都支持
-      ```
-      Cache-Control: no-store //不得缓存任何请求和响应内容
-      Cache-Control: no-cache //缓存但重新验证，请求会发至服务器，服务器验证所描述缓存是否过期，未过期则使用本地缓存副本
-      Cache-Control: public
-      Cache-Control: private // 默认
-      Cache-Control: max-age=3156000 //最大缓存时间，距离请求发起的时间秒数
-      Cache-Control: must-revalidate //必须验证
-      ```
-    - Pragma头：效果与<code>Cache-Control: no-cache</code>相同，但不能完全替代，用于兼容
-    - 缓存驱逐：资源过了过期时间后，不会直接删除。当客户端发起一个请求，缓存检索到有对应的已过期副本，会先将此请求附加<code>If-None-Match</code>头，发给服务器，若服务器返回304（响应无实体信息）则表示副本是新鲜的，可以节省一些带宽，如判读已过期，则带有该资源的实体返回
-    - 缓存寿命：先看max-age，没有则看Expires（比较Expires和头Date属性的值），两者都没有则看Last-Modified(<code>寿命 = (Date - Last-Modified) * 10%</code>)
-    - 更新：<code>URL + 版本号/时间戳</code>
-    - Vary：<code>当前请求 Vary = 缓存请求头 Vary = 缓存响应头 Vary</code>，才使用缓存的响应。<code>Vary: User-Agent</code>可避免缓存服务器错误地把移动端内容输出到桌面端
 
 ---
 ### 浏览器存储
@@ -1481,3 +1508,22 @@ null == undefined // true
 - 取消请求：``fetch``使用``AbortController``，``XMLHttpRequest``则提供了``abort``来处理
 - ``XMLHttpRequest``有更好的进度追踪
 - ``XMLHttpRequest``仅可在浏览器中使用，不能在Node环境中运行；而``fetch``可以运行在任何现代JS环境中
+
+---
+### DOM更新是同步还是异步
+- DOM操作是同步：JS直接修改DOM属性时，这些更改会立即应用到DOM树中
+- 浏览器渲染的过程是异步：浏览器装多个DOM变更放入对列，在适当时间批量处理
+- 在``Event Loop``中的处理流程
+  1. 任务执行：同步执行JS代码，包括DOM操作
+  2. 微任务阶段：处理``Promise``等微任务
+  3. 渲染阶段：如果需要渲染，浏览器执行``Layout``和``Paint``
+- 特殊情况：强制同步布局。当JS读取DOM几何属性时（``offsetWidth``等），浏览器立即触发布局计算，导致性能损耗
+  ```js
+  div.style.width = '100px'
+  console.log(div.offsetWidth) // 强制同步布局
+  div.style.height = '200px'
+  ```
+- DOM操作的优化：
+  - 批量修改：使用``DocumentFragment``，减少重排次数
+  - 动画优化：使用``requestAnimationFrame``在渲染前集中更新
+  - 分离读写：避免交替进行样式修改和布局查询
