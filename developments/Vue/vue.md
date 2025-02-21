@@ -178,15 +178,6 @@
 - ``v-for``遍历时，数组使用``forEach``或``for...of``遍历，对象使用``for...in``遍历
 
 ---
-### 全局组件
-- 全局组组件的注册行为必须在根实例化前发生，props的验证会在组件实例创建前进行
-- 组件props的type可为自定义函数([参考](https://cn.vuejs.org/v2/guide/components-props.html))
-
----
-### 插槽
-DEMO: [https://github.com/ErgoSphere/vue-virtual-scroller](https://github.com/ErgoSphere/vue-virtual-scroller)
-
----
 ### 生命周期
 - 2.x
   1. beforeCreated: 什么都不干
@@ -210,10 +201,6 @@ DEMO: [https://github.com/ErgoSphere/vue-virtual-scroller](https://github.com/Er
 
 ---
 ### [Vue 2.x 升级 Vue 3.x](https://github.com/ErgoSphere/es-plugins/blob/master/src/views/Comprehensive/VueMigrating.vue)
-
----
-### 使用innerHTML等原生方法后样式失效
-样式标签应为<style lang="scss"></style>，不可以使用scoped属性
 
 ---
 ### vue prototype 全局变量动态更新
