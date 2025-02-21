@@ -72,18 +72,61 @@
   let item = document.getElementsByTagName('h1')[0]
   item.textContent = 'change content'
   ```
-- 虚拟DOM过程
-  - 使用虚拟DOM的好处：
-    - 让组件的渲染逻辑从真实DOM中解耦
-    - 可以直接重用框架运行在其他环境中
-    - 允许第三方创建自定义渲染``createRenderer()``，不仅仅是浏览器上，包括iOS和Android等，也可以渲染到WebGL上而非DOM节点
-    - 提供了以编程的方式构造、检查、克隆及操作所需DOM操作的能力
+- 虚拟DOM生成过程
+  - 顶层的``<template>``内的模板通过``vue-sfc``模块衩编译成一个组件节点。组件节点有一个``render``函数用于创建后代节点。一棵虚拟DOM树便由组件节点的``render``函数来创建节点连接而成
+    - 节点的起始：根节点
+      ```js
+      import { createApp } from 'vue'
+      // App组件用于创建根节点
+      import App from './App.vue'
+      const app = createApp(App)
+      // mount时并没有一次性创建完整棵虚拟节点数，而是通过组件节点render逐个创建
+      app.mount('#app')
+      ```
+    - 节点的渲染顺序：深度优先算法
+    - 节点的更新流程：只有第一次触发组件的``render``函数是挂载组件。后续触发的都是更新节点
+      - 生成子节点：重新触发``render``函数而创建的后代节点不会直接进行节点替换，而是通过``diff``算法以打补丁的形式去修改已存在节点
+      - 以深度优先的形式比较更新前后的节点
+- 使用虚拟DOM的好处：
+  - 让组件的渲染逻辑从真实DOM中解耦
+  - 可以直接重用框架运行在其他环境中
+  - 允许第三方创建自定义渲染``createRenderer()``，不仅仅是浏览器上，包括iOS和Android等，也可以渲染到WebGL上而非DOM节点
+  - 提供了以编程的方式构造、检查、克隆及操作所需DOM操作的能力
+- diff算法
+  - 虚拟DOM与真实DOM的绑定
+    ```html
+    <div>
+      <span>123</span>
+      <div></div>
+    </div>
+    ```
+    对应节点树
+    ```
+    - VNode(div)
+      - VNode(span)
+        -VNode(123)
+      - VNode(div)
+    ```
+    遵循深度优行原则，因此创建元素的顺序如下：
+    1. 渲染VNode(div)节点，创建div元素
+    2. 渲染VNode(span)节点，创建span元素
+    3. 渲染VNode(123)文本节点，创建文本元素123
+    4. 渲染VNode(div)节点，创建div元素
+  - 对页面的优化：减少性能开销
+  - 实现原理：双端比较，只作同层级元素比较，不跨级
+  - ref: https://juejin.cn/post/7217731969306591291
+- 完整流程
+  1. 由真实DOM生成虚拟DOM树
+  2. 当某个DOM节点数据变化时，生成一个新的VNode
+  3. 新的VNode和旧的oldVNode进行对比
+  4. 通过patch函数给真实DOM打补丁
+- Vue中DOM更新为**异步更新队列**，如想马上拿到DOM更新后的DOM信息，使用``Vue.nextTick``
 
 ---
 ### 实现不同组件间数据交流的方法
-1. 父子组件：父 ⇒ 子 ``defineProps``, 子 ⇒ 父 ``defineEmits``
-2. ``vuex``(2.x)/``pinia``(3.x)
-3. 通过根实例或者父组件实例
+- 父子组件：父 ⇒ 子 ``defineProps``, 子 ⇒ 父 ``defineEmits``
+- ``vuex``(2.x)/``pinia``(3.x)
+- 通过根实例或者父组件实例
    - 2.x: 每个new Vue实例的子组件中，根实例可通过``$root``访问, 父组件实例可通过``$parent``访问
    - 3.x: 不再在实例上暴露``$root``和``$parent``，而是采用``getCurrentInstance``来管理
      ```js
@@ -95,10 +138,10 @@
        }
      }
      ```
-4. 通过ref访问子组件实例或子元素
-5. 依赖注入，指定父组件可提供给后代组件数据/方法， 父``provide``， 多层子``inject``
-6. vue.prototype["object_name"]
-7. 构建event bus
+- 通过``ref``访问子组件实例或子元素
+- 依赖注入，指定父组件可提供给后代组件数据/方法， 父``provide``， 多层子``inject``
+- vue.prototype["object_name"]
+- 构建event bus
    ```js
    // bus.js
    import Vue from 'developments/Vue/vue'
@@ -111,31 +154,28 @@
    bus.$on('event-name', res => {
    })
    ```
-   
----
-### computed默认只有getter，但可以自定义setter
-```js
-new Vue({
- data: {
-  a: 1
- },
- computed: {
-  counter: {
-   get: function () {
-    return "nyanyanya"
-   },
-   set: function () {
-    this.a = 2
-   }
-  }
- }
-})
-```
 
 ---
-### v-for
-- v-if与v-for同时使用时，v-for具有更高优先级
-- v-for遍历时，按Object.keys()结果遍历，但不保证在不同的JS引擎下都一致
+### ``v-for``
+- ``v-if``与``v-for``同时使用时，``v-for``具有更高优先级
+  - 循环生成和条件判断：在生成虚拟DOM时，``v-for``作为循环操作，``Vue``必须先生成一个列表再通过``v-if``决定是否渲染
+  - 性能优化：``Vue``在处理``v-if``和``v-for``，会在同一元素上执行两次不同的操作。先生成循环再判断可以避免在每次循环时对整个列表进行条件判断，提高渲染性能
+  - 写法比较
+    - 推荐：
+      ```vue
+      <ul>
+        <li v-for="item in items" :key="item.id" v-if="item.isVisible">{{ item.name}}</li>
+      </ul>
+      ```
+      此时先对数组遍历，生成``<li>``元素，然后``v-if``会依次检查每个生成的``<li>``的渲染条件，因此``v-if``只会作用在每个``v-for``渲染的单独元素不上，而不会阻止整个列表的渲染
+    - 不推荐
+      ```vue
+      <ul v-if="shouldRender">
+        <li v-for="item in items" :key="item.id">{{ item.name}}</li>
+      </ul>
+      ```
+      这种写法会导致``v-for``的完整执行，即使``shouldRender``为``false``，也会先创建整个列表再被销毁
+- ``v-for``遍历时，数组使用``forEach``或``for...of``遍历，对象使用``for...in``遍历
 
 ---
 ### 全局组件
@@ -245,13 +285,7 @@ export default {
 
 ---
 ### Vue diff算法（未够详细解答
-- 实现
-  1. 由真实DOM生成虚拟DOM树
-  2. 当某个DOM节点数据变化时，生成一个新的VNode
-  3. 新的VNode和旧的oldVNode进行对比
-  4. 通过patch函数给真实DOM打补丁
-- 优点: Vue的虚拟DOM更新为**异步更新队列**，如想马上拿到DOM更新后的DOM信息，使用<code>Vue.nextTick</code>
-- Vue diff算法只作同层级元素比较，不跨级
+
 
 ---
 ### vue性能优化

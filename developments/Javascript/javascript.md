@@ -1527,3 +1527,6 @@ null == undefined // true
   - 批量修改：使用``DocumentFragment``，减少重排次数
   - 动画优化：使用``requestAnimationFrame``在渲染前集中更新
   - 分离读写：避免交替进行样式修改和布局查询
+
+---
+### LRU（Least Recently Used）缓存策略
