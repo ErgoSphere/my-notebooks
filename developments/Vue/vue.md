@@ -200,28 +200,6 @@
   7. ``unmounted``：组件销毁后，组件实例和DOM元素都被销毁后
 
 ---
-### [Vue 2.x 升级 Vue 3.x](https://github.com/ErgoSphere/es-plugins/blob/master/src/views/Comprehensive/VueMigrating.vue)
-
----
-### vue prototype 全局变量动态更新
-以vuex存储状态更新值为例
-```js
-Vue.mixin({
- computed: {
-  LOCALE: function() {
-   return store.state.sys.info ? store.state.sys.info.lang_packet: {}
-  }
- }
-})
-new Vue({
- components: { App },
- router,
- store,
- template: "<App/>"
-}).$mount("#app")
-```
-
----
 ### 父子组件生命周期顺序
 1. 加载渲染：父beforeCreate → 父created → 父beforeMount → 子beforeCreate → 子created → 子beforeMount → 子mounted → 父mounted
 2. 子组件更新：父beforeUpdate → 子beforeUpdate → 子updated → 父updated
@@ -230,11 +208,11 @@ new Vue({
 
 ---
 ### Vue打包vendor过大解决
-- vue-router懒加载
-- gzip压缩
+- ``vue-router``懒加载
+- ``gzip``压缩
 - CDN引入js和css
 - webpack配置external，不打包第三方库
-- 配置DLLPlugin和DLLReferencePlugin，将引用依赖提取
+- 配置``DLLPlugin``和``DLLReferencePlugin``，将引用依赖提取
 
 ---
 ### Vue的模板语法引擎？
@@ -269,10 +247,6 @@ export default {
 }
 </script>
 ```
-
----
-### Vue diff算法（未够详细解答
-
 
 ---
 ### vue性能优化

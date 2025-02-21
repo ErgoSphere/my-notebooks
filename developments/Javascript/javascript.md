@@ -1530,3 +1530,17 @@ null == undefined // true
 
 ---
 ### LRU（Least Recently Used）缓存策略
+
+---
+### 打包优化
+- ``babel-runtime``：用于优化``Babel``转译后的代码，减少代码冗余。原理是将一些常见的``Babel``转译辅助代码提取到外部模块，而不是在每个文件中重复生成。
+  - 帮助处理``Polyfill``：``babel-runtime``提供了一个共享的库来存放一些polyfill（如兼容新特性Promise、Map等功能至老浏览器的代码），以便不同文件间共享
+  - 帮助处理辅助函数：``Babel``转译中生成的一些辅助函数（``_extends``、``_objectspread``等），将这些函数从模块中提取出来集中到一个地方，避免重复代码增加体积
+  - ``regenerator-runtime``支持：如果使用了``async/await``等生成器函数，``babel-runtime``还会自动提供支持``regenerator-runtime``，减少重复包含该库的情况
+  ```json
+  {
+    "plugin": [
+      "@babel/plugin-transform-runtime"
+    ]
+  }
+  ```  
