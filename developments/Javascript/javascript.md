@@ -1157,9 +1157,8 @@ person.greet() // My name is Luke and 15
         - reject：操作失败
     - fulfilled + reject = settled
     - Promise.resolve(fulfilled)静态方法
-- Promise中断
-    - Promise本质上是无法被终止的
-    - 通过<code>Promise.race()</code>使其中一个promise reject的情况，无视另外的promise的结果去达到中断的目的
+- Promise中断：Promise本质上是无法被终止的
+    - 通过``Promise.race()``使其中一个promise reject的情况，无视另外的promise的结果去达到中断的目的
       ```typescript
       interface CancellablePromiseFactory<T = unknown> extends Promise<T> {
         abort?: (reasonToAbort: any) => void 
@@ -1199,6 +1198,19 @@ person.greet() // My name is Luke and 15
       //after 10s
   
       ```
+      ```js
+      function abortWrapper(p1) {
+        let abort
+        let p2 = new Promise((resolve, reject) => (abort = reject))
+        let p = Promise.race([p1, p2])
+        p.abort = abort 
+        return p
+      }
+      const req = abortWrapper(request)
+      req.the(res => console.log(res)).catch(e => console.log(e))
+      setTimeout(() => req.abort('用户手动终止请求'), 2000)
+      ```
+    - 中断调用链：在``then/catch``的最后一行返回一个永远``pending``的``promise``
 - 实现Promise.all()
   ```js
   Promise.myAll = promises => {
@@ -1544,3 +1556,19 @@ null == undefined // true
     ]
   }
   ```  
+
+---
+### ``forEach``循环中止方法
+使用``try...catch``抛出异常
+```js
+try {
+  const arr = [1, 2, 3, 4]
+  arr.forEach(item => {
+    if (item === 3) throw new Error('Break')
+    console.log(item)
+  })
+}.catch (e) {
+  if (e.message ! == 'Break') throw e
+}
+
+```
