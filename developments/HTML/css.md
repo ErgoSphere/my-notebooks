@@ -364,8 +364,9 @@ const webpSupport = () => {
 - ``transform: scale(0, 0)``: 占位，不响应事件
 
 ---
-### Flex布局
+### ``Flex``布局
 - 子元素的``float``、``clear``、``vertical-align``属性将失效
+- ``flex: 1``(grown 1, shrink 1, basis 0)
 
 ---
 ### 浏览器如何给一个页面元素匹配CSS选择器及提高效率

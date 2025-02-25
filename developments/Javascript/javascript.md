@@ -757,10 +757,6 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
   ```
 
 ---
-### indexedDB
-- 异步操作（同步操作曾用于web workers，现已从规范中移除）
-
----
 ### 数据存储类型
 - 持久化存储：只有用户选择清理才会被清理
 - 临时存储：当最近一次使用时Storage limits达到限制时会被自动清理（LRU Policy）
@@ -857,50 +853,93 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
 3. v8会自动执行垃圾回收，由于js也运行在主线程上，垃圾回收会打断JS运行，可能会造成页面卡顿，所以v8把垃圾回收拆成小任务，穿插在js中执行
 
 ---
-### 宏任务和微任务
+### 事件循环：宏任务和微任务
 - 宏任务：
-    - 常见定时器```setTimeout```, ```setInterval```, ```setImmediate```
-    - 用户交互事件```I/O```, [requestAnimationFrame](#requestAnimationFrame)
-    - 整体代码```script```
+  - 常见定时器```setTimeout```, ```setInterval```, ```setImmediate```
+  - 用户交互事件```I/O```, [requestAnimationFrame](#requestAnimationFrame)
+  - 整体代码```script```
 - 微任务：
-    - 原生Promise相关: <code>Promise.then</code>, <code>Promise.catch</code>, <code>Promise.finally</code>
-    - MutationObserver
-    - process.nextTick
-- 同一层级下，微任务先于宏任务执行，如<code>Promise.then</code>先于<code>setTimeout</code>
-    - 例1
-        1. 整个js是一个宏任务，按顺序执行，先打印1
-        2. 向下，setTimeout是宏任务，此时放入宏任务队列
-        3. 向下, 执行promise中的代码，打印3
-        4. 到resolve函数，将promise状态变为resolve, 并保存结果
-        5. 向下，promise.then是微任务，放入微任务队列
-        6. 向下，打印5
-        7. 执行微任务，then打印4
-        8. 执行resolve，浏览器表现为undefined
-        9. 微任务执行完成，执行宏任务setTimeout，输出2
-```js
-console.log(1)
-setTimeout(() => {
-  console.log(2)
-}, 0)
-new Promise((resolve) => {
-  console.log(3)
-  resolve()
-}).then(() => {
-  console.log(4)
-})
-console.log(5)
-//输出顺序
-//1
-//3
-//5
-//4
-//因浏览器机制devtools可能会出现undefined
-//2
-```
+  - 原生Promise相关: ``Promise.then``, ``Promise.catch``, ``Promise.finally``
+  - ``MutationObserver``
+  - ``process.nextTick``
+  - ``queueMicrotask``
+- 调度过程： 
+  - 同一层级下，微任务先于宏任务执行。因为微任务会在当前事件循环的末尾立即执行，而宏任务需要等待下一次的事件循环
+  - 如果在微任务中产生新的微任务，这些新的微任务会继续在当前事件循环中被处理，直到队列清空
+  - 例1
+    1. 整个js是一个宏任务，按顺序执行，先打印1
+    2. 向下，``setTimeout``是宏任务，在下一次事件循环才执行
+    3. 向下, 执行``promise``中的代码，打印3
+    4. 到``resolve``函数，将``promise``状态变为``resolve``, 并保存结果
+    5. 向下，``promise.then``是微任务，放入微任务队列
+    6. 向下，打印5
+    7. 执行微任务，then打印4
+    8. 执行``resolve``，浏览器表现为``undefined``
+    9. 微任务执行完成，进入下一次事件循环，执行宏任务``setTimeout``，输出2
+    ```js
+    console.log(1)
+    setTimeout(() => {
+      console.log(2)
+    }, 0)
+    new Promise((resolve) => {
+      console.log(3)
+      resolve()
+    }).then(() => {
+      console.log(4)
+    })
+    console.log(5)
+    //输出顺序
+    //1
+    //3
+    //5
+    //4
+    //因浏览器机制devtools可能会出现undefined
+    //2
+    ```
+  - 例2:
+    ```js
+    Promise.resolve().then(() => {
+      console.log('Microtask 1')
+      Promise.resolve().then(() => console.log('Microtask 2'))
+    }).then(() => console.log('Microtask 3'))
+  
+    setTimeout(() => console.log('Timeout'), 0)
+    // Microtask 1
+    // Microtask 2
+    // Microtask 3
+    // Timeout
+    ```
+- 事件循环在``Node.js``和浏览器中的差异
+  - ``Node.js``: 微任务队列在事件循环的每个阶段（``poll``、``check``等）之间执行
+  - 浏览器：微任务队列在单个宏任务执行完毕后立即清空
+- 事件循环解决的问题：
+  - 单线程下的非阻塞异步处理：因为JS是单线程的，如果所有操作都同步执行，耗时任务（I/O、定时器等）会阻塞主线程导致页面卡死或无响应。将这些耗时任务交给底层系统的多线程环境处理。
+  - 通过将任务划分为宏任务和微任务，定义明确的执行顺序
+  - 避免资源竞争和死锁
+  - 高响应的用户体验，高效I/O操作：用户交互事件作为**高优先级宏任务**插入队列
 
 ---
-### async/await原理
-- 本质是generator的语法糖
+### ``async/await``
+- 本质是``generator``的语法糖，基于``Promise``实现：通过``function*``（[生成器函数](#生成器函数function和生成器对象Generator)）定义，使用``yield``暂停执行，并可通过``.next()``恢复
+- ``async``: 本质是返回``Promise``的生成器函数
+- ``await``：相当于``yield``，暂停执行直到``Promise``完成，并由执行器自动处理后续逻辑
+- 执行流程：
+  1. 调用``async``: 立即返回一个``Promise``对象
+  2. 遇到``await``: 暂停函数执行，等待其后的``Promise``解决。在此期间JS引擎会执行其他任务，保持单线程的响应性（通过事件循环）
+  3. ``Promise``解决后：将结果返回给``await``，恢复函数执行
+  4. 错误处理：若``Promise``拒绝，抛出异常，可以用``try..catch``捕获
+  ```js
+  async function fetchUser() {
+    try {
+      const response = await fetch('/api/user') // 暂停，等待fetch完成
+      const data = await response.json() // 暂停，等待json解析
+      return data
+    } catch (error) {
+      console.log(error)
+    }
+  }
+  ```
+- ``async/await`` VS ``回调函数/then链式调用``：``async/await``提供更简洁、同步化的语法，使错误处理也更简洁
 
 ---
 ### JS创建对象的几种方法
@@ -1514,12 +1553,15 @@ null == undefined // true
 - 对数组的遍历，``for...in``返回所有可枚举属性；``for...of``只返回数组下标对应属性值
 
 ---
-### ``fetch`` vs ``XMLHttpRequest`` ([ref](https://www.greatfrontend.com/questions/quiz/what-are-the-differences-between-xmlhttprequest-and-fetch))
-- ``fetch``提供链式promise，``XMLHttpRequest``使用回调函数（事件驱动）
+### ``fetch`` vs ``XMLHttpRequest``(AJAX) ([ref](https://www.greatfrontend.com/questions/quiz/what-are-the-differences-between-xmlhttprequest-and-fetch))
+- ``fetch``提供链式``promise``，``XMLHttpRequest``使用回调函数（事件驱动）
 - ``fetch``提供可拓展性更强的headers和request body，可用catch抛出更清晰的错误处理
 - 取消请求：``fetch``使用``AbortController``，``XMLHttpRequest``则提供了``abort``来处理
 - ``XMLHttpRequest``有更好的进度追踪
 - ``XMLHttpRequest``仅可在浏览器中使用，不能在Node环境中运行；而``fetch``可以运行在任何现代JS环境中
+- ``fecth().then()``比``XMLHttpRequest``的回调更快触发
+  - ``fecth().then()``：微任务，在当前事件循环末尾立即执行
+  - ``XMLHttpRequest``回调：宏任务，在下一次事件循环中执行
 
 ---
 ### DOM更新是同步还是异步
@@ -1567,8 +1609,111 @@ try {
     if (item === 3) throw new Error('Break')
     console.log(item)
   })
-}.catch (e) {
-  if (e.message ! == 'Break') throw e
+} catch (e) {
+  if (e.message !== 'Break') throw e
 }
-
 ```
+
+---
+### ES6 Class 详解 （pending: 需和其他地方整合）
+- **类的构造函数（``constructor``）**: 每个类都可以有一个且只能有一个自己的构造函数。当通过``new``调用一个类时，这个类就会调用自己的``consturctor``，可在创建对象时给类传递参数，执行过程如下
+  1. 在内存中开辟一块新的空间用于创建新对象
+  2. 在这个对象内部的``__proto__``属性会赋值为该类的``prototype``属性
+  3. 构造函数内的``this``，指向创建出来的新对象
+  4. 执行构造函数内部代码
+  5. 如果函数无返回对象，则返回``this``
+  ```js
+  class Person {
+    constructor (name) {
+      this.name = name
+    }
+  }
+  let person = new Person('Mark')
+  console.log(person) // Person { name: 'Mark' }
+  // 类本身指向构造函数
+  console.log(Person === Person.prototype.constructor) // true
+  ```
+  在类上的所有方法都会放在``prototype``属性上
+- **类的属性**: 实例的属性定须定义在类的方法里，如上例在构造函数中定义``name``属性
+  - 静态属性：当把一个属性赋值给类本身而非``prototype``时。可直接通过类来访问，无需实例中访问
+    ```js
+    class Person {
+      static name = 'Luke'
+    }
+    console.log(Person.name)
+    ```
+  - 私有属性：只能在类中读写，不能通过外部引用
+    ```js
+    class Person {
+      #age;
+      constructor(name, age) {
+        this.name = name
+        this.#age = age
+      }
+    }
+    let person = new Person('Rose', 20)
+    console.log(person) // Person { name: 'Rose' }
+    console.log(person.name) // 'Rose'
+    console.log(person.age) // undefined
+    console.log(person.#age) // Private field '#age' must be declared in an enclosing class
+    console.log(Object.getOwnPropertyDescriptors(person)) // 仅能获取到name相关的描述符信息
+    ```
+- **类的方法**：
+  - 静态方法：
+    ```js
+    class Person {
+      static create(name) {
+        return name
+      }
+    }
+    let person = Person.create('Kathy')
+    console.log(person) // 'Kathy'
+    ```
+- **类的继承**：使用``extends``关键字拓展子类
+
+---
+### ``indexedDB``
+- 异步操作（同步操作曾用于web workers，现已从规范中移除）
+- 仅以``key-value``形式存储
+- 何时触发``onupgradeneeded``
+  - 首次创建数据库时
+  - 升级数据库版本时
+- ``createIndex``的作用：
+  - 提高查询效率
+  - 支持排序过滤
+  - 支持复杂查询
+
+---
+### 生成器函数``function*``和生成器对象``Generator``
+- 使用``function*``关键字声明一个生成器函数
+- 生成器函数内部可以通过``yield``暂停
+- 调用生成器函数会返回一个生成器对象， 即``Generator``实例
+- 生成器对象遵守迭代器协议（Iterator Protocol），支持``for...of``遍历，可通过``.next()``逐步执行（或``.return()``、``.throw``控制执行），保存函数的执行上下文（暂停/恢复状态）
+- 工作流程：
+  ```js
+  // 1.定义生成器函数
+  function* counter() {
+    let count = 0
+    while(true) {
+      yield count++
+    }
+  }
+  // 2.创建生成器对象
+  const gen = counter()
+  // 3.逐步执行
+  console.log(gen.next().value) // 0
+  console.log(gen.next().value) // 1
+  console.log(gen.next().value) // 2
+  ```
+- 应用场景：
+  - 惰性求值：按需生成数据，如无限序列等
+  - 异步控制：与``Promise``结合，实现类似``async/await``效果
+  - 状态机：管理复杂的状态流转逻辑
+  - 自定义迭代：为对象实现可迭代接口
+- 与普通函数区别:
+
+  |       | ``function*``     | ``function``  | 
+  |-------|-------------------|---------------|
+  | 执行方式  | 可暂停/恢复（``yield``） | 一次性执行到底       |
+  | 返回值类型 | 返回``Generator``   | 返回``return``值 | 
+  | 内容占用  | 保留执行上下文（利于大数据处理）  | 执行上下文后销毁      | 
