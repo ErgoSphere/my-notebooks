@@ -129,3 +129,8 @@
        ```
   - 通过第三方共享：``OAuth``、``OpenID Connect``或者类似机制，使用授权服务器作为中介，通过令牌共享用户身份，而不直接依赖cookie
   - 通过URL参数传递cookie（不推荐）
+
+---
+### DOM ``attribute`` vs DOM ``property``
+- ``attribute``是dom元素在文档中作为html标签拥有的属性
+- ``property``是dom元素在js中的对象属性

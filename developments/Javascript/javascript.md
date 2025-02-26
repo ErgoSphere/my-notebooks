@@ -778,36 +778,96 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
   - 适用于长期存储，浏览器关闭后仍保留
   - 和同一域名内所有窗口标签所共有
   - 三者之中拥有最大的存储容量（取决于不同浏览器）
-- ``IndexDB``
+- ``IndexedDB``
+  - 异步操作（同步操作曾用于web workers，现已从规范中移除）
+  - 仅以``key-value``形式存储
+  - 何时触发``onupgradeneeded``
+      - 首次创建数据库时
+      - 升级数据库版本时
+  - ``createIndex``的作用：
+      - 提高查询效率
+      - 支持排序过滤
+      - 支持复杂查询
 
-| 存储       | Cookie                | sessionStorage | localStorage   |
+| 存储       | ``Cookie``                | ``sessionStorage`` | ``localStorage``   |
 |----------|-----------------------|----------------|----------------|
-| 初始化      | 客户端/服务器端(set-cookie)  | 客户端        | 客户端     |
+| 初始化      | 客户端/服务器端(``set-cookie``)  | 客户端        | 客户端     |
 | 生命周期     | 自设定                   | 标签页/窗口关闭  | 手动删除    |
-| 是否向服务器发送 | 是，通过请求头的cookie        | 否     | 否            |
+| 是否向服务器发送 | 是，通过请求头的``cookie``        | 否     | 否            |
 | 数据访问     | 同域窗口/标签页              | 同域窗口/标签页  | 同一标签页 |
-| 安全性      | JS不能个性Http不涉及Only的cookie | 不涉及           | 不涉及    |
+| 安全性      | JS不能个性Http不涉及Only的``cookie`` | 不涉及           | 不涉及    |
 
 ---
-### 闭包作用
-1. 使外部能够读取到函数内部的变量
-2. 让变量的值始终保持在内存中
-  ```js
-  function f1 () {
-    var n = 999
-    addValue = function() { //addValue：全局变量，且值是匿名函数
-      n += 1
+### 闭包
+- 作用
+  - 封装私有变量：隐藏内部数据，仅通过特定方法暴露操作接口
+     ```js
+     function createCounter () {
+       let count = 0
+       return {
+         increment: () => count++,
+         getCount: () => count,
+       }
+     }
+     const counter = createCounter()
+     counter.increment()
+     console.log(counter.getCount()) // 1
+     console.log(count) // 报错
+     ```
+  - 维持变量在内存中的存在，避免被垃圾回收，如在定时器中保持某个状态
+     ```js
+     function delayedLog(message, delay) {
+       setTimeout(() => {
+         console.log(message) // 闭包保留了message的引用
+       }, delay)
+     }
+     delayedLog('hello', 1000)
+     ```
+  - 函数柯里化：通过分步传递参数， 生成特定功能的函数
+     ```js
+     function multiply(a) {
+       return (b) => a * b // 闭包保留a值
+     }
+     const double = multiply(2)
+     console.log(double(5)) // 10
+     ```
+- 负面作用
+  - [内存泄漏](#Javascript内存泄漏)：变量长期驻留内存，无法被垃圾回收（GC）
+    ```js
+    function createHeavyClosure() {
+      const bigData = new Array(1000000).fill('*')
+      return () => console.log(bigData.length)
     }
-    function f2 () {
-      console.log(n)
+    let fn = createHeavyClosure() // 即使不再需要，bigData仍被闭包引用，无法释放
+    // 解决：使用后置null
+    fn = null // 解除引用，触发GC
+    ```
+  - 循环中的闭包陷阱：变量共享
+    ```js
+    for (var i = 0; i < 3; i++) {
+      setTimeout(() => {
+        console.log(i) // 输出3, 3, 3
+      }, 100)
     }
-    return f2 //f2被赋予了全局变量，导致f2始终在内存中，f2依存于f1，所以f1也在内存中，不会被垃圾回收机制回收
-  }
-  var result = f1() 
-  result() //999
-  addValue()
-  result() //1000
-  ```
+    // 解决，var改成let隔离作用域
+    for(let i = 0; i < 3; i++) {
+      setTimeout(() => {
+        console.log(i) // 输出0, 1, 2
+      })
+    }
+    ```
+  - 性能损耗：增加内存和运行时间开销
+    ```js
+    function fn() {
+      // 大数据
+    } 
+    const closures = new Array(1000000).fill().map(() => fn())
+    ```
+- 正确使用方式
+  - 明确闭包生命周期，及时移除不再需要的引用
+  - 优先使用块级作用域，使用``let/const``替代``var``，避免变更提升和共享
+  - 避免循环引用，如闭包和DOM元素相互引用会导致内存泄漏
+  - 性能敏感场景慎用：高频触发函数内部避免创建闭包
 
 ---
 ### 内存管理
@@ -1344,7 +1404,7 @@ person.greet() // My name is Luke and 15
    //#button被两个变量引用，一个是elements，一个在DOM树中，回收时需要将两个引用都释放
    //removeButton仅仅释放了DOM中的button引用，elements仍保持引用，所以button不会被垃圾回收
    ```
-4. 闭包：即使作用域已经结束，仍访问定义在作用域内的变量，所以具有记忆周围环境(context)的功能
+4. [闭包](#闭包)：即使作用域已经结束，仍访问定义在作用域内的变量，所以具有记忆周围环境(context)的功能
    ```js
    let newElem
    function outer () {
@@ -1375,12 +1435,6 @@ person.greet() // My name is Luke and 15
 - 其于multipart发送XHR
 - IE: ActiveX HTMLFile
 - Adobe Flash Socket(已停止)
-
----
-### 每个对象是否一定有原型并从原型继承属性方法
-- 错误
-- ```Object.prototype```没有原型，```Object.prototype.__proto__ === null```
-- 使用```Object.getPrototypeOf(Object.prototype)```替换上述方法
 
 ---
 ### 函数原型链
@@ -1421,20 +1475,56 @@ function fn () { // 内部函数
   var addedPro = 1
   window.addedPro // 1
   ```
-
----
-### dom attribute vs dom property
-- attribute是dom元素在文档中作为html标签拥有的属性
-- property是dom元素在js中的对象属性
-
+  
 --- 
-### __proto__ vs prototype
-- 对象属性__proto__
-- 函数对象属性prototype
+### ``__proto__`` vs ``prototype``
+函数``prototype`` -- (定义) --> 实例原型对象 <-- (引用)-- 该对象创建的实例的``__proto__``
+- ``__proto__``：
+  - **所有对象**都有的属性
+  - 是实例的属性，用于访问原型链，查找继承的属性和方法
+  - 可能过直接赋值改变对象原型，但不推荐，影响性能
+- ``prototype``：
+  - 仅**函数对象**才有的属性；
+  - 是构造函数的属性，用于定义实例的原型模板
+  - 通过构造函数个性，会影响所有已创建和未来的实例
+```js
+const arr = []
+console.log(arr.__proto__ === Array.prototype) // true
+function Foo() {}
+console.log(Foo.__proto__ === Function.prototype) // true
+  
+function Person () {}
+Person.prototype.sayHello = function () {
+  console.log('Hello')
+}
+console.log(Person.prototype) // 指向原型对象 { sayHello: f }
+const obj = {}
+console.log(obj.prototype) // undefined
+  
+const person = new Person()
+console.log(person.__proto__ === Person.prototype) // true
 
---- 
-### 特殊运算
-- ```undefined + undefined = NaN```
+obj.__proto__ = {foo: 'bar'} // 修改原型链
+console.log(obj.foo) // 'bar'
+
+Person.prototype.age = 30
+const p1 = new Person()
+console.log(p1.age) // 30
+console.log(person.age) // 30
+```
+```mermaid
+graph LR
+    
+A(实例对象 person) --- B[__proto__]
+B --- C[Person.prototype]
+C --- D[__proto__] --- E[Object.prototype] --- F[__proto__] --- G[null]
+C --- H[sayHello]
+A --- I[自身属性]
+
+```
+- 每个对象是否一定有原型并从原型继承属性方法？
+  - 错误。```Object.prototype```没有原型，```Object.prototype.__proto__ === null```
+  - 可使用```Object.getPrototypeOf(Object.prototype)```替换上述方法（``obj.__proto__``）
 
 ---
 ### delete
@@ -1487,6 +1577,7 @@ if ( typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.reques
   '1' + false // '1false'
   false + true // 1
   1 + Symbol() // uncaught typeerror
+  undefined + undefined = NaN
   ```
 - 非加法运算符，只要有一边为数字，则另一边就会被转为数字
 - ``==``两边值都转为``Number``类型
@@ -1494,6 +1585,17 @@ if ( typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.reques
   3 == true // => 3 == 1 => false
   '0' == false // 0 == 0 => true
   ```
+  - ``==`` vs ``===``
+    - ``==``强制类型转换， ``===``不强制
+    - ``===``同时比较值和类型，``==``不是
+    ```js
+    null == undefined // true
+    [] == false // true
+    1 == [1] // true
+    0 == ''// true
+    0 == '0' // true
+    '' == '0' // false
+    ```
 - ``<``,``>``字符串按字母表顺序比较，其他情况转为数字再比较
   ```js
   'a' < 'b' // true
@@ -1518,21 +1620,7 @@ if ( typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.reques
   ```
 
 ---
-### ``==`` vs ``===``
-- ``==``强制类型转换， ``===``不强制
-- ``===``同时比较值和类型，``==``不是
-```js
-null == undefined // true
-[] == false // true
-1 == [1] // true
-0 == ''// true
-0 == '0' // true
-'' == '0' // false
-```
-
-
----
-### 展开运算符(...)
+### 展开运算符``...``
 - 字符串转单字数组
   ```js
   let str = 'mysksksks'
@@ -1670,18 +1758,6 @@ try {
     console.log(person) // 'Kathy'
     ```
 - **类的继承**：使用``extends``关键字拓展子类
-
----
-### ``indexedDB``
-- 异步操作（同步操作曾用于web workers，现已从规范中移除）
-- 仅以``key-value``形式存储
-- 何时触发``onupgradeneeded``
-  - 首次创建数据库时
-  - 升级数据库版本时
-- ``createIndex``的作用：
-  - 提高查询效率
-  - 支持排序过滤
-  - 支持复杂查询
 
 ---
 ### 生成器函数``function*``和生成器对象``Generator``
