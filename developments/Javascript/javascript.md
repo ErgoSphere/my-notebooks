@@ -35,7 +35,7 @@ typeof BigInt("1") = "bigint"
     ```
 
 ---
-###  普通函数与箭头函数
+### 普通函数与箭头函数
 - 箭头函数没有**自己的**this，只从自己作用域链的上一层继承this。``call``、``apply``和``bind``等方法不能改变箭头函数中``this``的指向
   ```js
   var id = 'apple'
@@ -229,7 +229,7 @@ document.addEventListener("visibilitychange", function(ev) {
 ```
 
 ---
-###  继承
+### 继承
 1. **原型链继承**：将父类实例作为子类原型
    - 优点：父类方法可复用
    - 缺点：父类引用属性会被子类共享；子类构建实例时不能向父类传参
@@ -267,11 +267,10 @@ document.addEventListener("visibilitychange", function(ev) {
 7. **ES6 Class extends**
    - 本质上是ES5继承的语法糖
    - ES6继承中子类的构造函数的原型链指向父类的构造函数，ES5中仅为复制无原型链指向
-- **小结**：
-  1. class必须使用new来创建实例，普通构造函数也可不使用
-  2. class内部定义的方法不可枚举，普通构造函数可枚举
-  3. class内部默认即为严格模式
-  4. class不存在变量提升
+   - class必须使用``new``来创建实例，普通构造函数也可不使用
+   - class内部定义的方法不可枚举，普通构造函数可枚举
+   - class内部默认即为严格模式
+   - class不存在变量提升
 - ES5:
     ```js
     function Point(x, y) {
@@ -409,7 +408,7 @@ document.addEventListener("visibilitychange", function(ev) {
 
 ---
 
-###  服务器通信
+### 服务器通信
 1. XMLHttpRequest: 可获取任何类型的数据，可支持HTTP外的协议（FTP，file://）
 2. EventSource: 服务器单向推送，一个EventSource实例会对HTTP服务开启持久化连接，以text/event-stream格式发送事件，应用于处理社交媒体更新，新闻提要等
 3. Websocket: 全双工通信([ref](http://websocket.org/aboutwebsocket.html))
@@ -417,10 +416,15 @@ document.addEventListener("visibilitychange", function(ev) {
     - 通道由client发起HTTP连接，服务器收到后打开对应的HOST TCP/IP连接。通道建立后可以无阻挡地通过代理Proxy
     - client通过```Upgrade:websocket```告知服务器，服务器接收后同意将协议转为websocket（响应```101状态码```），然后HTTP连接终止并被websocket连接替代
     - socket.io使用：options.transports指定类型，可选websocket, polling, polling-xhr, polling-jsonp，[demo](https://github.com/ErgoSphere/es-plugins/blob/master/src/api/socket.js)
+    - ``websocket``实现兼容低版本浏览器
+      - 长轮询XHR
+      - 其于multipart发送XHR
+      - IE: ActiveX HTMLFile
+      - Adobe Flash Socket(已停止)
 
 ---
 ###  多标签通信
-1. websocket
+1. [websocket](#服务器通信)
 2. localStorage event
 3. postMessage
 4. SharedWorker: 特定类型worker，如几个窗口、iframe或其他worker，必须同源，
@@ -461,7 +465,7 @@ document.addEventListener("visibilitychange", function(ev) {
     - Generator语法糖
 
 ---
-###  浏览器缓存
+### 浏览器缓存
 1. service worker: 需要用https访问
 2. memory cache: 内存中的缓存，随着进程释放（tab关闭）而消失
 3. disk cache
@@ -526,7 +530,7 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
 ---
 ### 事件委托、事件流传播过程
 - 事件捕获 → 事件目标 → 事件冒泡
-- ```document.addEventListener(..., capture)```, capture为boolean， true为捕获，false为冒泡
+- ``document.addEventListener(..., capture)``, capture为boolean， true为捕获，false为冒泡
 - 不支持冒泡的事件
   - focus, blur(element)
   - mouseenter, mouseleave(element)
@@ -537,9 +541,9 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
   - addEventListener(eventName, e => e.stopImmediatePropagation())
 
 ---
-###  ```Reflect.ownKeys```vs ```Object.keys```
+### ```Reflect.ownKeys```vs ```Object.keys```
 - 两者都得到对象属性的集合，以数组形式返回
-- Reflect.ownKeys是所有属性，包括```不可枚举属性```和```symbol```；Object.keys仅包含```可枚举属性```
+- ``Reflect.ownKeys``是所有属性，包括**不可枚举属性**和**symbol**；``Object.keys``仅包含**可枚举属性**
 
 ---
 ###  class的继承和prototype的继承一样吗
@@ -872,7 +876,7 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
 ---
 ### 内存管理
 - JS在创建变量时自动分配了内存，并且在不使用的时候自动释放（垃圾回收）
-- 垃圾回收：
+- 垃圾回收机制（GC）：
     - 计数垃圾收集
         - 如果没有引用指向该对向，对象被垃圾回收机制回收
         - 无法处理循环引用，内存生生泄漏
@@ -1242,7 +1246,7 @@ person.greet() // My name is Luke and 15
     - window.name
     - location.hash
     - document.domain: 仅限主域相同，子域不同
-    - websocket: 保证websocket会话的唯一性-建立链接的url加时间戳
+    - [websocket](#服务器通信): 保证websocket会话的唯一性-建立链接的url加时间戳
     - nginx
     - http-proxy
 
@@ -1389,7 +1393,7 @@ person.greet() // My name is Luke and 15
    ```
     - 使用严格模式避免意外创建全局变量，减少使用全局变量
     - 使用全局变量时确保在处理完数据放置null或重新分配
-2. 忘记释放计时器
+2. 未清理的定时器（``setInterval``），未移除的事件监听器（``addEventListener``）
 3. 多处引用：多个变量引用同一个对象，或对table中的某个Cell引用也将导致table保存在内存中
    ```js
    let elements = {
@@ -1422,19 +1426,12 @@ person.greet() // My name is Luke and 15
    //outer()执行了elem = newElem, newElem会引用上一次调用的匿名函数，即第n次调用outer()会保持第n-1次调用的匿名函数
    //解决: 计时器中的函数改为 newElem = outer()()
    ```
-5. console.log(): 打印这部份对象的内存不会被回收
+5. ``console.log()``: 打印这部份对象的内存不会被回收
 
 ---
-### `window.onload` vs `DOMContentLoaded`
-- window.onload: 文档中所有对象在DOM中，图片，脚本，链接及子框架都完成装载
-- DOMContentLoaded：初始HTML文件被完全加载和解析完成后触发，不需等待样式图像等完全加载
-
----
-### websocket兼容低版本浏览器
-- 长轮询XHR
-- 其于multipart发送XHR
-- IE: ActiveX HTMLFile
-- Adobe Flash Socket(已停止)
+### ``window.onload`` vs ``DOMContentLoaded``
+- ``window.onload``: 文档中所有对象在DOM中，图片，脚本，链接及子框架都完成装载
+- ``DOMContentLoaded``：初始HTML文件被完全加载和解析完成后触发，不需等待样式图像等完全加载
 
 ---
 ### 函数原型链
@@ -1758,6 +1755,11 @@ try {
     console.log(person) // 'Kathy'
     ```
 - **类的继承**：使用``extends``关键字拓展子类
+  - ``class``的继承和``prototype``的继承的区别：[继承](#继承)
+    - ``class``为**ES6**的**继承**，``prototype``为**ES5**的**原型链继承**
+    - ``class``的子类没有自己的this对象，先创造父类的this对象（所以先调用super），再用子类的构造函数修改this
+    - ``prototype``实质为先创造子类的this对象，再将父类方法通过``Parent.apply(this)``添加到子类上
+    - ``class``内部定义的方法不可枚举，不存在变量提升
 
 ---
 ### 生成器函数``function*``和生成器对象``Generator``
@@ -1793,3 +1795,28 @@ try {
   | 执行方式  | 可暂停/恢复（``yield``） | 一次性执行到底       |
   | 返回值类型 | 返回``Generator``   | 返回``return``值 | 
   | 内容占用  | 保留执行上下文（利于大数据处理）  | 执行上下文后销毁      | 
+
+---
+### 怎么将变量定义到``window``上
+- 使用``var``关键词（全局作用域下）
+- 直接挂载到``window``上
+- 使用``function``（全局作用域下）
+```js
+var a = 1;
+window.b = 2;
+function fn () {};
+window.fn;
+``` 
+- 可能引发的问题
+  - 全局命名污染
+  - 安全风险：可被覆盖变量
+  - 内存泄漏：全局变量的生命周期与页面一致，除非手动后置为``null``，否则无法被GC
+  - 性能影响：全局作用域查找速度比局部变量慢，需遍历作用域链
+  - 模块化失效：破坏封闭性
+
+---
+### JS检测内存
+- 浏览器：使用```performance.memory```API，需在Chrome中通过``chrome://flags/#enable-precise-memory-info``启用标志，或启动时添加``--enable-precise-memory-info``参数
+- Node.js环境：使用``process.memoryUsage()``，或者启动Node.js时添加``--inspect``参数
+- 第三方工具：``clinic.js``、``heapdump``等
+
