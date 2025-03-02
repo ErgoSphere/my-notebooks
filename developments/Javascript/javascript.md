@@ -1,6 +1,6 @@
-###  JS数据类型 ([ref](https://zhuanlan.zhihu.com/p/95534245))
-1. 基本数据类型：Undefined, Null, Number, String, Boolean, Symbol(ES6), BigInt(ES11)
-2. 复杂数据类型：Object
+### JS数据类型 ([ref](https://zhuanlan.zhihu.com/p/95534245))
+1. 基本数据类型：``Undefined``, ``Null``, ``Number``, ``String``, ``Boolean``, ``Symbol(ES6)``, ``BigInt(ES11)``
+2. 复杂数据类型：``Object``
 ```
 typeof Number = "number"
 typeof NaN = "number"
@@ -16,8 +16,8 @@ typeof BigInt("1") = "bigint"
 ```
 
 ---
-###  Symbol
-1. 不使用new是因为通过new实例化的结果为object对象
+### Symbol
+1. 不使用new是因为通过new实例化的结果为object
     ```js
     const s = Symbol() // typeof s = 'symbol'
     ```
@@ -36,7 +36,7 @@ typeof BigInt("1") = "bigint"
 
 ---
 ### 普通函数与箭头函数
-- 箭头函数没有**自己的**this，只从自己作用域链的上一层继承this。``call``、``apply``和``bind``等方法不能改变箭头函数中``this``的指向
+- 箭头函数没有**自己的**``this``，只从自己作用域链的上一层继承``this``。``call``、``apply``和``bind``等方法不能改变箭头函数中``this``的指向
   ```js
   var id = 'apple'
   let func = () => { console.log(this.id) }
@@ -60,8 +60,8 @@ typeof BigInt("1") = "bigint"
     }
     ```
 - 箭头函数不能作为构造函数，即不可new
-- 箭头函数不能使用arguments对象，可使用rest参数代替`...rest`
-  - 箭头函数没有**自已的**<code>this</code>, <code>arguments</code>, <code>super</code>或<code>new.target</code>
+- 箭头函数不能使用``arguments``对象，可使用rest参数代替``...rest``
+  - 箭头函数没有**自已的**``this``, ``arguments``, ``super``或``new.target``
   - ```...rest```来自于父作用域（this也一样)
     ```js
     function foo1 () {
@@ -75,7 +75,7 @@ typeof BigInt("1") = "bigint"
     foo1(1, 2, 3, 4) // ReferenceError: arguments is not defined
     foo2(1, 2, 3, 4)//[1,2,3,4]
     ```
-- 箭头函数不可命名用yield命令，因此箭头函数不能作为generator函数
+- 箭头函数不可命名用``yield``命令，因此箭头函数不能作为构造器函数
     ```js
     'use strict'
     var obj = {
@@ -120,23 +120,23 @@ Person.call(person3, 'Luke')
 ---
 ### ``function foo()`` vs ``var foo = function() {}``
 - ``function foo()``是函数定义，会有函数提升
-```js
-foo() // 'FOOOOOOO'
-function foo() {
-  console.log('FOOOOOOO')
-}
-```
+  ```js
+  foo() // 'FOOOOOOO'
+  function foo() {
+    console.log('FOOOOOOO')
+  }
+  ```
 - ``var foo = function() {}``是函数表达式，无函数提升（但``var``会变量提升）; 当表达式内的函数命名时，仅能从函数内访问自身，否则会导致报错或者undefined
-```js
-foo() // Uncaught TypeError: foo is not a function
-var foo = function () {
-  console.log('FOOOOOO')
-}
-const myFunc = function namedFunc() {
-  console.log(namedFunc) // 正常执行
-}
-console.log(namedFunc) // undefined
-```
+  ```js
+  foo() // Uncaught TypeError: foo is not a function
+  var foo = function () {
+    console.log('FOOOOOO')
+  }
+  const myFunc = function namedFunc() {
+    console.log(namedFunc) // 正常执行
+  }
+  console.log(namedFunc) // undefined
+  ```
 
 ---
 ### 匿名函数
@@ -148,7 +148,6 @@ console.log(namedFunc) // undefined
 })()
 console.log(typeof x) // undefined
 ```
-
 
 ---
 ###  深拷贝和浅拷贝
@@ -164,10 +163,21 @@ console.log(typeof x) // undefined
     let arr = [...arr1, ...arr2]
     ```
 - 深拷贝：指复制后的新对象重新指向一个新的内存地址，两个对象改变互不影响。
+  - JSON实现
     ```js
-    //不含函数
+    // JSON实现
     let oldObj = {1: 'a', 2: 'b'}
     console.log(JSON.parse(JSON.stringify(oldObj)))
+    ```
+    - 不使用原因：```JSON.stringify```仅可序列化对象**可枚举的自有属性**
+      - 如果对象中有构造函数生成的，使用```JSON.parse(JSON.stringify(Object))```会丢失对象```constructor```
+      - 对象中有时间对象``Date``，则时间会被parse成字符串而非时间对象
+      - 对象中有```RegExp```, ```Error```对象时，序列化的结果只能得到空对象
+      - 对象中有```函数```或```undefined```时则会丢失
+      - 对象中有```NaN```， ```Infinity```和```-Infinity```时，序列化结果变为```null```
+      - 对象中存在循环引用时无法正确深拷贝，会抛出错误
+  - 递归实现
+    ```js
     const deep_clone = obj => {
       let ret, k, b;
       // instanceof 检测构造函数的prototype属性是否出现在某个实例对象原型链上
@@ -183,15 +193,44 @@ console.log(typeof x) // undefined
       }
       return ret;
     };
+    function deepClone(obj, cache = new WeakMap()) {
+      if (obj === null || typeof obj !== 'object') return obj
+      if (cache.has(obj)) return cache.get(obj) // 处理循环引用
+      let clone = Array.isArray(obj) ? [] : {}
+      cache.set(obj, clone)
+      console.log('before', cache)
+      for(let k in obj) {
+        if (obj.hasOwnProperty(k)) {
+          console.log('on clone', k, cache)
+          clone[k] = deepClone(obj[k], cache)
+        }
+      }
+      return clone 
+    }
     ```
-- 不使用```JSON.parse(JSON.stringify(Object))``` 深拷贝的原因：
-  - ```JSON.stringify```仅可序列化对象可枚举的自有属性
-    - 如果对象中有构造函数生成的，使用```JSON.parse(JSON.stringify(Object))```会丢失对象```constructor```
-    - 对象中有时间对象，则时间会被parse成字符串而非时间对象
-    - 对象中有```RegExp```, ```Error```对象时，序列化的结果只能得到空对象
-    - 对象中有```函数```或```undefined```时则会丢失
-    - 对象中有```NaN```， ```Infinity```和```-Infinity```时，序列化结果变为```null```
-    - 对象中存在循环引用时无法正确深拷贝
+    不能处理``Date``、``RegExp``、``Set``、``Map``等特殊对象，不能复制``Symbol``、``undefined``、函数等
+  - ``window``对象的``structuredClone()``方法(现代浏览支持/Node.js 16+)：支持``Date``、``RegExp``、``Set``、``Map``等特殊对象，但不支持``Function``和``Symbol``([ref](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/structuredClone))
+  - ``MessageChannel``（仅适用于浏览器）: 
+    - 支持``Date``、``RegExp``、``Set``、``Map``和循环引用
+    - 支持``Function``，但不支持``Symbol``
+    - 适用于异步处理大对象，和WEB应用避免阻塞UI线程s
+    - 依赖``MessageChannel``，无法在node环境中使用
+    ```js
+    function deepCloneWithMessageChannel(obj) {
+      return new Promise((resolve) => {
+        const { port1, port2 } = new MessageChannel()
+        port2.onmessage = event => resolve(event.data)
+        port1.postMessage(obj)
+      })
+    }
+    const obj = { a: 1, b: { c: 2 }, d: new Date() }
+    deepCloneWithMessageChannel(obj).then(copy => {
+      cosole.log(copy) // { a: 1, b: { c: 2 }, d: new Date() }
+    })
+    ```
+  - ``history.state``：仅限浏览器，十分不推荐
+  - 第三方克隆函数，如``lodash``
+
 ---
 ### 变量声明方法
 - ES5: ```var```, ```function```
@@ -200,7 +239,7 @@ console.log(typeof x) // undefined
 1. ```let```, ```const```两者均无变量提升，所以必须声明前调用后。```var```有变量提升，因为前后无影响
 2. ```let```只在声明的代码块内有效， ```const```为常量
 3. ```let```, ```const```不允许重复声明
-4. for使用let时，```循环let```和```内部let```为两个父子作用域
+4. ``for``使用``let``时，```循环let```和```内部let```为两个父子作用域
     ```js
     for(let i = 0; i < 3; i++) {
       let i = "abc"
@@ -221,7 +260,7 @@ console.log(typeof x) // undefined
     ```
 
 ---
-###  切换浏览器导航或最小化窗口时监听 ([ref](https://developer.mozilla.org/zh-CN/docs/Web/API/Page_Visibility_API))
+### 切换浏览器导航或最小化窗口时监听 ([ref](https://developer.mozilla.org/zh-CN/docs/Web/API/Page_Visibility_API))
 ```js
 document.addEventListener("visibilitychange", function(ev) { 
   console.log(document.hidden)
@@ -317,7 +356,10 @@ document.addEventListener("visibilitychange", function(ev) {
     Object.keys(Point.prototype) //[]
     Object.getOwnPropertyNames(Point.prototype) // ["constructor", "toString", "getPosition", "toValue", "showDiff"]
     ```
-- 对比
+- 对比ES6 class 继承和ES5 prototype 继承
+  - class的子类没有自己的``this``对象，先创造父类的this对象（所以先调用super），再用子类的构造函数修改this
+  - prototype实质为先创造子类的``this``对象，再将父类方法通过``Parent.apply(this)``添加到子类上
+  - class内部定义的方法不可枚举，不存在变量提升
     ```js
     class Point {
       constructor() {}
@@ -343,7 +385,7 @@ document.addEventListener("visibilitychange", function(ev) {
 
 ---
 ### 模块化
-- ES6, CommonJS, CMD, AMD
+- ``ES6``, ``CommonJS``, ``CMD``, ``AMD``
 - 模块内部数据与实现是私有的，向外部暴露一些接口方法与外部其它模块通信
 - 优势：减少命名空间污染，更好的分离，按需加载，高复用性，高可维护性
 - 引入多个script标签后的问题：请求过多，依赖模糊
@@ -352,14 +394,14 @@ document.addEventListener("visibilitychange", function(ev) {
 > **namespace模式**: 减少全局变量，解决命名冲空，数据不安全，外部可直接修改内部数据
 >
 > **IIFE模式**: 立即调用函数表达式（闭包），将数据及方法封装到一个函数内部，通过给window添加属性来向外暴露接口
-1. **CommonJS**: ```require```
-   - Node应用模块采用了此种方式，每个文件为一个模块，有自己的作用域，文件内变量、函数、类私有，在服务器端是同步加载，浏览器端需要提前编译打包 browserify
+1. **CommonJS**: ```require```和``module.exports``
+   - Node应用模块采用了此种方式，每个文件为一个模块，有自己的作用域，文件内变量、函数、类私有，在服务器端是同步加载，浏览器端需要提前编译打包``browserify``
    - 不会污染全局作用域
-   - **在运行时加载函数**，只在运行能确定依赖关系及输入输出
+   - 动态导入：**运行时解析**，只在运行能确定依赖关系及输入输出
    - 模块只在第一次加载时运行，运行结果缓存，多次加载需要清缓存
    - 模块加载顺序按在代码中出现的顺序
    - 输入为被输出值的拷贝，输出后模块内部变化无法再影响此值(值传递或引用传递)
-    ``` js
+    ```js
     //output 
     module.export = value 
     module.xxx = value
@@ -373,18 +415,19 @@ document.addEventListener("visibilitychange", function(ev) {
     let exists = _fs.exists
     let readfile = _fs.readfile
     ```
-2. **ES6**
-    - import: default为独有关键字，导入为强绑定
-    - **编译的过程中加载**，因为为了实现静态化，尽可能在运行前就知道依赖关系，输入和输出变量
+2. **ES6**：``ES Module``
+    - 使用``import``和``export``: default为独有关键字，导入为强绑定
+    - 静态导入：**编译时确定依赖关系**。为了实现静态化，尽可能在运行前就知道依赖关系，输入和输出变量
+    - 适用于浏览器和Node.js
     ```js
     export { func1, func2, func3 }
     // 仅引入加载了这两个方法，其他方法不加载
     // 引入的模块必须存在，因为编译时必须要读取里面的内容查验，不能出现在运行if else里
     import { func1, func2 } from ".."
     import foo from "./foo.js"
-    // 与commonJS相异处：commonJS在编译的时候不管对方是否存在（不校验），可以运行时才去读取
+    // 不能在条件语句中导入
     if (condition) {
-      foo = require("./foo.js")
+     import { func1 } froom '..' // 语法错误
     }
     ```
 3. **AMD**
@@ -401,21 +444,40 @@ document.addEventListener("visibilitychange", function(ev) {
 4. **CMD**
    - CommonJS和AMD的结合，加载异步，使用时才执行，用于浏览器端（例sea.js）
 
----
-###  cacheStorage 和 cache
-- **cacheStorage**: 类似mango, 管理所有cache
-- **cache**: 类似mango内的db
+|                      | ``ESM``                               | ``CommonJS``                           | 
+|----------------------|---------------------------------------|----------------------------------------|
+| 作用域                  | 模块级作用域（独立作用域）                         | 文件级作用域（共享缓存）                           |
+| ``this``             | ``undefined``(严格模式)                   | ``module.exports``                     | 
+| 顶层``await``          | ✅ 支持（Node.js 14.8+）                   | ❌ 不支持                                  | 
+| 是否异步                 | ✅ 是                                   | ❌ 否，为同步加载                              | 
+| 是否缓存                 | ✅ 是                                   | ✅ 是                                    | 
+| 解析方式                 | 静态（编译时确定）                             | 动态（运行时解析）                              | 
+| ``import``位置         | 仅能在顶层                                 | 任意位置                                   | 
+| 是否阻塞                 | ✅ 不阻塞                                 | ❌ 阻塞                                   | 
+| ``require``是否可在条件语句中 | ❌ 不可以                                 | ✅ 可以                                   | 
+| 执行效率                 | 更快（静态解析）                              | 更慢（动态解析）                               | 
+| 加载方式                 | 并行加载                                  | 同步加载（阻塞）                               | 
+| Treeshake            | ✅ 支持（移除未使用代码）                         | ❌ 不支持（全部加载）                            | 
+| 浏览器运行                | ✅ 原生支持                                | ❌ 不支持                                  | 
+| ``Node.js``          | ✅ 支持，需要``'type': 'module'``           | ✅ 默认支持                                 | 
+| ``Webpack/Rollup``   | ✅ 支持                                  | ✅ 支持                                   | 
+| Require ESM?         | ❌ 不能``require()``ESM                  | ✅ ESM可以``import()``CJS                 | 
+| 相互调用                 | ✅ ``import * as module from './cjs.js'`` | ❌ 不支持``require``ESM，可用``import()``动态加载 | 
 
 ---
+### ``cacheStorage`` 和 ``cache``
+- ``cacheStorage``: 类似mango, 管理所有cache
+- ``cache``: 类似mango内的db
 
+---
 ### 服务器通信
-1. XMLHttpRequest: 可获取任何类型的数据，可支持HTTP外的协议（FTP，file://）
-2. EventSource: 服务器单向推送，一个EventSource实例会对HTTP服务开启持久化连接，以text/event-stream格式发送事件，应用于处理社交媒体更新，新闻提要等
-3. Websocket: 全双工通信([ref](http://websocket.org/aboutwebsocket.html))
+1. ``XMLHttpRequest``: 可获取任何类型的数据，可支持HTTP外的协议（FTP，file://）
+2. ``EventSource``: 服务器单向推送，一个EventSource实例会对HTTP服务开启持久化连接，以text/event-stream格式发送事件，应用于处理社交媒体更新，新闻提要等
+3. ``Websocket``: 全双工通信([ref](http://websocket.org/aboutwebsocket.html))
     - 握手由HTTP进行，此后于HTTP无关
     - 通道由client发起HTTP连接，服务器收到后打开对应的HOST TCP/IP连接。通道建立后可以无阻挡地通过代理Proxy
     - client通过```Upgrade:websocket```告知服务器，服务器接收后同意将协议转为websocket（响应```101状态码```），然后HTTP连接终止并被websocket连接替代
-    - socket.io使用：options.transports指定类型，可选websocket, polling, polling-xhr, polling-jsonp，[demo](https://github.com/ErgoSphere/es-plugins/blob/master/src/api/socket.js)
+    - socket.io使用：``options.transports``指定类型，可选``websocket``, ``polling``,`` polling-xhr``, ``polling-jsonp``，[demo](https://github.com/ErgoSphere/es-plugins/blob/master/src/api/socket.js)
     - ``websocket``实现兼容低版本浏览器
       - 长轮询XHR
       - 其于multipart发送XHR
@@ -423,147 +485,207 @@ document.addEventListener("visibilitychange", function(ev) {
       - Adobe Flash Socket(已停止)
 
 ---
-###  多标签通信
+### 多标签通信
 1. [websocket](#服务器通信)
-2. localStorage event
-3. postMessage
-4. SharedWorker: 特定类型worker，如几个窗口、iframe或其他worker，必须同源，
+2. ``localStorage``事件
+3. ``postMessage``
+4. ``SharedWorker``: 特定类型worker，如几个窗口、iframe或其他worker，必须同源，
 
 ---
-###  输入网址后浏览器做了什么事(浏览器渲染过程)
-- **请求过程**
-    1. 搜索浏览器自身DNS缓存，如有缓存直接访问已缓存的IP地址
-    2. 无缓存，搜索系统自身DNS缓存，读取HOST文件，是否有DNS IP地址映射
-    3. 向运营商发送DNS解析请求，获得IP地址
-    4. 向IP地址所在server进行3次TCP握手建立连接
-    5. 建立连接之后向server发送HTTP请求
-    6. server接收请求后将处理结果发回，如HTML页面代码等
-    7. client的内核和JS引擎解析和渲染页面，内含的JS，CSS，图片等资源也将通过HTTP请求进行加载
-    8. client根椐拿到的资源进行页面渲染呈现给用户，如无后续操作则向服务器端发起TCP四次挥手断开
-- **渲染过程**（上述7, 8时进行）
-    1. 解析收到的文档，根椐文档的内容构建DOM树（DOM元素 + 属性节点）
-    2. 根椐CSS生成CSSOM规则树
-    3. 根椐DOM树和CSSOM规则树生成渲染树（render tree）。渲染对象为渲染树的节点，是一个含大小颜色的矩形。渲染对象与DOM对象相对应（非一对一），不可见的DOM对象不会被插入渲染树。
-    4. 生成渲染树后，浏览器会根椐渲染树进行布局（回流/自动重排）
-    5. 布局完成后进行绘制（对象paint）
-- **浏览器渲染方式**： Flow Based Layout
-- 由于浏览器使用流式布局，对Render Tree的计算通常只需要遍历一次就可以完成，但table及其内部元素除外，他们可能需要多次计算，通常要花 3 倍于同等元素的时间
-
----
-###  ES6转ES5思路及babel原理
-- 代码字符串解析成AST（抽象语法树/Abstract Syntax Tree）: ES6 AST → ES5 AST → 再次生成代码字符串
-- babel转译：解析parse → 转换transfer(babel-traverse) → 生成generate (babel-generator)
-
----
-###  异步解决方案
+### 异步解决方案(待改)
 1. 回调函数：无法catch错误
 2. promise: 无法取消promise（网络请求已发出
     - 可通过返回reject来实现中断的处理
 3. Generator: 可以控制函数执行
     - yield
 4. await/async: 将异步改为同步，当异步无依赖性而使用时性能降低
-    - Generator语法糖
 
 ---
-### 浏览器缓存
-1. service worker: 需要用https访问
-2. memory cache: 内存中的缓存，随着进程释放（tab关闭）而消失
-3. disk cache
-4. push cache: HTTP/2内容，仅存在于session中
+### 在用户关闭页面前向服务器发送信息
+- 在事件中发送异步请求：失败
+- 在事件中发送同步xhr：延迟页面卸载
+- 在事件中使用image src：延迟页面卸载
+- 在事件中使用创建个几秒中的no-op循环来延迟页面卸载并向服务器发送信息
+- （最优解）``navigator.sendBeacon``: 通过HTTP将少量数据**异步**传输到服务器
 
 ---
-###  网站性能优化
-1. 合并请求资源：如雪碧图，文件合并，base64
-2. DNS缓存/缓存策略
-3. 延迟加载，减少首屏加载: 如将图片地址存在data属性中，当滚动到可视区域时再赋值src
-4. 用户行为触发
-5. CDN
-6. Gzip
-7. 减少cookie大小
-
----
-###  在用户关闭页面前向服务器发送信息
-unload event
-1. 在事件中发送异步请求：失败
-2. 在事件中发送同步xhr：延迟页面卸载
-3. 在事件中使用image src：延迟页面卸载
-4. 在事件中使用创建个几秒中的no-op循环来延迟页面卸载并向服务器发送信息
-5. （最优解）<code>navigator.sendBeacon</code>: 通过HTTP将少量数据**异步**传输到服务器
-
----
-###  [MVVM, MVC, MVP](https://www.ruanyifeng.com/blog/2015/02/mvcmvp_mvvm.html)
+### [MVVM, MVC, MVP](https://www.ruanyifeng.com/blog/2015/02/mvcmvp_mvvm.html)
 1. **MVC**
-    - Model → View → Controller → Model : 单向通信
+    - ``Model`` → ``View`` → ``Controller`` → ``Model`` : 单向通信
     - view发送指令到controller, controller完成业务逻辑，要求model改变状态，然后model将新数据发送到view, 用户得到反馈
 2. **MVP**
-    - View ⇋ Presenter ⇋ Model : 双向, view 不和 Model通信
+    - ``View`` ⇋ ``Presenter`` ⇋ ``Model`` : 双向, view 不和 Model通信
 3. **MVVM**
-    - Model ⇋ View ↔︎ ViewModel: Model与View双向通信，view和ViewModel双向绑定
+    - ``Model`` ⇋ ``View`` ↔︎ ``ViewModel``: Model与View双向通信，view和ViewModel双向绑定
 
 ---
-###  JS对象转换
+### JS对象转换
 1. 对象到字符串
-    - 如对象有toString()，则调用该方法
-    - 如无toString()或此方法不返回一个原始值，则调用valueOf()
-    - 两者都无，此时抛出一个类型错误异常
+   - 如对象有``toString()``，则调用该方法
+   - 如无``toString()``或此方法不返回一个原始值，则调用``valueOf()``
+   - 两者都无，此时抛出一个类型错误异常
 2. 对象到数字
-    - 如有valueOf()，则调用该方法
-    - 如无valueOf()，则调用toString()
+    - 如有``valueOf()``，则调用该方法
+    - 如无``valueOf()``，则调用``toString()``
     - 两者都无，此时抛出一个类型错误异常
 
 ---
-###  Get请求传参长度限制
-- HTTP协议未作规定，最大长度是浏览器和服务器限制URI的长度，不同的浏览器和服务器限制的长度不一样
-- 要支持IE，则最大长度为2083byte，若只支持chrome，则最大长度为8182byte
+### 操作符的隐式转换
+- ``+``两边至少有一个``String``变量时，两边会隐匿转换为字符串；其他情况则两边会转换为数字
+  ```js
+  1 + '23' // '123'
+  1 + false // 1
+  '1' + false // '1false'
+  false + true // 1
+  1 + Symbol() // uncaught typeerror
+  undefined + undefined = NaN
+  ```
+- 非加法运算符，只要有一边为数字，则另一边就会被转为数字
+- ``==``两边值都转为``Number``类型
+  ```js
+  3 == true // => 3 == 1 => false
+  '0' == false // 0 == 0 => true
+  ```
+    - ``==`` vs ``===``
+        - ``==``强制类型转换， ``===``不强制
+        - ``===``同时比较值和类型，``==``不是
+      ```js
+      null == undefined // true
+      [] == false // true
+      1 == [1] // true
+      0 == ''// true
+      0 == '0' // true
+      '' == '0' // false
+      ```
+- ``<``,``>``字符串按字母表顺序比较，其他情况转为数字再比较
+  ```js
+  'a' < 'b' // true
+  '12' < 13 // true
+  false > -1 // true
+  ```
+- 对象会被``ToPrimitive``转换为基本类型再转换
+  ```js
+  let a = {}
+  a > 2 // false
+  // 以下为执行过程
+  a.valueOf() // ToPrimitive默认type为number，因此先valueOf
+  a.toString() // '[object Object]'
+  Number(a.toString()) // NaN
+  NaN > 2 // false
+  ```
+  例2:
+  ```js
+  let a = {name: 'Jack'}
+  let b = {age: 18}
+  a + b // '[object Object][object Object]'
+  ```
 
 ---
-###  为什么使用setTimeout实现setInterval
-setInterval是将事件放在任务队列中，当空闲时才取事件执行，如果有执行栈时间过长，多个计时器则不能按指定时间执行任务
+### 展开运算符``...``
+- 字符串转单字数组
+  ```js
+  let str = 'mysksksks'
+  str.split('') // ['m', 'y', 's', 'k', 's', 'k', 's', 'k', 's']
+  [...str] // ['m', 'y', 's', 'k', 's', 'k', 's', 'k', 's']
+  ```
 
 ---
-###  URL和URI的区别
-- URI：统一资源标识符，http://www.xxx.com/html/html1, 命名机制+主机名+资源自身路径
-- URL：统一资源定位器，http://www.11.com:9000/aaa, schema://host:port/path, schema有http, ftp, gopher等
-- URN：统一资源命名：mailto:java-net@java.sun.com
-- URL和URN是URI的子集
+### 为什么使用``setTimeout``模拟实现``setInterval``
+- ``setInterval``不会等待上次任务执行完毕，只是按固定间隔调度回调。如果某次任务时间过长，可能会导致任务堆积，出现**回调执行重叠**
+- ``setTimeout``可以确保任务执行完毕后再调度下次执行
 
 ---
 ### 事件委托、事件流传播过程
 - 事件捕获 → 事件目标 → 事件冒泡
 - ``document.addEventListener(..., capture)``, capture为boolean， true为捕获，false为冒泡
 - 不支持冒泡的事件
-  - focus, blur(element)
-  - mouseenter, mouseleave(element)
-  - resize, scroll(window)
-  - load, unload(window)
+  - ``focus``, ``blur``(element)
+  - ``mouseenter``, ``mouseleave``(element)
+  - ``resize``, ``scroll``(window)
+  - ``load``, ``unload``(window)
 - 中断事件传播
-  - addEventListener(eventName, callback, {once: true})
-  - addEventListener(eventName, e => e.stopImmediatePropagation())
+  - ``addEventListener(eventName, callback, {once: true})``
+  - ``addEventListener(eventName, e => e.stopImmediatePropagation())``
 
 ---
-### ```Reflect.ownKeys```vs ```Object.keys```
-- 两者都得到对象属性的集合，以数组形式返回
-- ``Reflect.ownKeys``是所有属性，包括**不可枚举属性**和**symbol**；``Object.keys``仅包含**可枚举属性**
-
----
-###  class的继承和prototype的继承一样吗
-- class为ES6继承，prototype为ES5的原型链继承
-- class的子类没有自己的this对象，先创造父类的this对象（所以先调用super），再用子类的构造函数修改this
-- prototype实质为先创造子类的this对象，再将父类方法通过Parent.apply(this)添加到子类上
-- class内部定义的方法不可枚举，不存在变量提升
-
----
-###  map和object比较
+### ``Map`` vs ``Object``
 - [https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Map](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Map)
-- map可使用forEach遍历，但无法使用for循环，map.length为0，需要获取长度使用map.prototype.size
+- ``Map``需要获取长度使用``Map.prototype.size``
+- ``Map``在增删查改的性能通常比``Object``更优
+- ``Map``的遍历按照推入顺序，``Object``无序，遍历时则按照浏览器ASCII排序
+- ``Map``中的键可以是任意值（函数，对象，基本类型），``Object``的键必须是String或Symbol
+- ``Map``可直接被迭代``for (let value of map.values())``，Object只有知道键才能迭代
 
 ---
-###  JS递归深度限制
-由浏览器限制行为，超过浏览器限制出现堆栈溢出
+### ```WeakMap``` vs ````Map````
+1. Map的鍵可以是任意类型，WeakMap只接受对象作为鍵(null)除外
+2. Map的键与内存地址绑定，地址不一样即视为两个键；WeakMap的键为弱引用，垃圾回收机制不将该引用考虑在内，所以对应的对象可能会被自动回收，回收后WeakMap自动移除和对应的键值对
+3. Map可被遍历，有size; WeakMap不能被遍历，不能清空（与键不计入，被垃圾回收机制忽略有关）
 
 ---
+### ``Set`` vs ``Map``
+| 特性    | ``Set``                    | ``Map``     | 
+|-------|----------------------------|-------------|
+| 存储方式  | 只存值，没有键 [value, value]（集合） | 任意数据类型      |
+| 键类型   | N/A                    | 无序，唯一键      | 
+| 值的唯一性 | 唯一值               | 可重复值        |
+| 元素顺序  | 按插入顺序           | 按插入顺序       |
+| 性能    | 遍历快，适合去重      | 适合查找、存储映射关系 |
+```js
+//数组去重
+let arr = [1, 2, 3, 3, 3, 1]
+console.log([...new Set(arr)]) // [1, 2, 3]
+```
+- ``Set``插入值时不作类型转换
+```js
+let set_a = new Set()
+set_a.add(5)
+set_a.add("5")
+console.log([...set_a]) // [5, "5"]
+```
 
-###  Uint8Array 和 Uint8ClampedArray
+---
+### JS递归深度限制
+- 由浏览器限制行为，超过浏览器限制出现堆栈溢出。JS在运行时会维护一个调用栈（Call Stack），函数递归调用时，每次调用都会压入栈。如果递归层级过深，调用栈会溢出。大部份JS引擎的最大调用栈深度大约在10000 - 100000之间。
+- 解决
+  - 使用``setTimeout``进行尾递归优化：JS是单线程的，``setTimeout``将递归拆分成**多个**[事件循环](#事件循环宏任务和微任务)，避免调用栈溢出
+    ```js
+    // 让递归变异步
+    function recursiveWithTimeout(n) {
+      if (n === 0) return 
+      setTimeout(() => {
+        recursiveWithTimeout(n -1) // 宏任务，每次推入下一次的循环事件中
+      }, 0)
+    }
+    recursiveWithTimeout(100000)
+    ```
+  - [尾调用](#尾调用)
+  - 改为循环（迭代）方式实现：循环不占用调用栈，避免溢出，且性能更优，比递归更高效
+  - ``Trampoline``（蹦床函数）:
+    - 是一种**递归转迭代**技巧，主递归函数返回一个函数(Thunk)，由外层trampolining机制执行，避免调用栈溢出
+    - 适用所有环境，不依赖于尾调用（有限制）
+    ```js
+    function trampoline(fn) {
+      return funciton (...args) {
+        let result = fn(...args)
+        while(typeof result === 'function') {
+          result = result()
+        }
+        return result
+      }
+    }
+    // 递归函数，每次调用返回一个函数
+    function factorial(n, acc = 1) {
+      if (n === 0) return acc
+      return () => factorial(n - 1, acc * n) // 返回thunk
+    }
+    // 包装递归函数
+    const safeFactorial = trampoline(factorial)
+    console.log(safeFactorial(100000))
+    ```
+
+---
+### ``Uint8Array`` 和 ``Uint8ClampedArray``
 - 皆常用于canvas
 - Uint8ClampedArray主要用于canvas特殊场景，如imageData
 - 如果输入值为0～255整数，则两者结果一致
@@ -571,12 +693,15 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
 - Uint8ClampedArray的转换逻辑为ToUint8Clamp，负数归入0，大于255的数归入255，不直接取整，采用银行家舍入
 
 ---
-###  Reflect
-1. 能避免某些Object方法造成的抛错，如Object.defineProperty修改不可写的对象时会抛错，而Reflect.defineProperty(obj, name, desc)会正常运行返回false。
-2. 与Proxy对象方法一一对应，避免如Proxy默认行为被修改，总可以在Reflect上获取默认行为
+### ``Reflect``
+- 能避免某些``Object``方法造成的抛错，如``Object.defineProperty``修改不可写的对象时会抛错，而``Reflect.defineProperty(obj, name, desc)``会正常运行返回false。
+- 与``Proxy``对象方法一一对应，避免如Proxy默认行为被修改，总可以在Reflect上获取默认行为
+- ```Reflect.ownKeys```vs ```Object.keys```
+  - 两者都得到对象属性的集合，以数组形式返回
+  - ``Reflect.ownKeys``是所有属性，包括**不可枚举属性**和**symbol**；``Object.keys``仅包含**可枚举属性**
 
 ---
-###  防抖和节流
+### 防抖和节流
 - 防抖：事件触发n秒后才回调，如果n秒内又被触发，则重新计时。如搜索输入时, n秒后才查询，继续监听到输入对象，重新计时
   ```js
   //简单的防抖函数
@@ -620,186 +745,10 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
     - 高频提交
 
 ---
-###  ```WeakMap``` vs ````Map````
-1. Map的鍵可以是任意类型，WeakMap只接受对象作为鍵(null)除外
-2. Map的键与内存地址绑定，地址不一样即视为两个键；WeakMap的键为弱引用，垃圾回收机制不将该引用考虑在内，所以对应的对象可能会被自动回收，回收后WeakMap自动移除和对应的键值对
-3. Map可被遍历，有size; WeakMap不能被遍历，不能清空（与键不计入，被垃圾回收机制忽略有关）
-
----
-###  浏览器是单进程吗？进程和线程的区别？
-- 浏览器有单进程也有多进程，现代浏览器几乎都是多进程，开一个tab页即为开一个进程
-- 进程(process)：一个具有独立功能的各班以在一个数据集上的一次动态执行过程，是操作系统分配资源的最小单位，进程间相互独立
-- 线程(thread): 程序执行中一个单一的顺序控制流，是程序执行的最小单位
-- 浏览器内核为多线程
-    - GUI渲染线程
-    - Javascript引擎线程
-    - 定时触发器线程
-    - 事件触发线程
-    - 异步http请求线程
-
----
-###  Set和Map的用法，Map和Object的区别
-- Map和Object的区别：
-    - Map的遍历按照推入顺序，Object无序，遍历时则按照浏览器ASCII排序
-    - Map可由size得出长度，Object无法直接得出长度
-    - Map中的键可以是任意值（函数，对象，基本类型），Object的键必须是String或Symbol
-    - Map默认不包含任何键，只有显示插入(Map.set)的键，Object有原型
-    - Map可直接被迭代(<code>for (let value of map.values())</code>)，Object只有知道键才能迭代
-    - Map在频繁增删键值有更好的表现，Object无优化
-- Map和Set的区别用法
-    - Map以[key, value]（字典）形式储存，Set以[value, value]（集合）形式储存
-    - Set允许储存任何类型的**唯一值**(包括原始值和对象引用)
-      ```js
-      //数组去重
-      let arr = [1, 2, 3, 3, 3, 1]
-      console.log([...new Set(arr)]) // [1, 2, 3]
-      ```
-    - Set插入值时不作类型转换
-      ```js
-      let set_a = new Set()
-      set_a.add(5)
-      set_a.add("5")
-      console.log([...set_a]) // [5, "5"]
-      ```
-
----
-###  HTTP/HTTPS([ref](https://juejin.cn/post/6844903471565504526))
-1. **HTTP**：超文本转输协议，明文方式发送，无数据加密，不适合传输敏感信息。是TCP的一种
-2. **HTTPS**：安全套接字层超文本转输协议，在HTTP的基础上加入了SSL协议，SSL（security sockets layer）依靠证书难证服务器身份，为通信加密。
-    - 作用：建立信息安全通道，确认网站真实性, 客户端TLS来解析证书
-    - 优点：安全性，谷歌SEO针对HTTPS有排名提升
-    - 缺点：会使页面加载时间延长至50%，增加10%到20%的耗电，影响缓存，增加数据开销和功耗，加密范围比较有限，SSL证书信用链体系不安全，SSL需要绑定IP但不能在同一IP上绑定多个域名
-    - 流程：client将自己支持的加密规则发送 -> server从中选出一组算法将自己身份信息以证书形式发回，内含网站地址，加密公钥，证书颁发机构
-3. HTTP和HTTPS区别：
-    - HTTPS需要到ca申请证书，免费较少
-    - HTTP明文转输，HTTPS加密
-    - 两者使用了完全不同的连接方式，端口不一样，HTTP为80，HTTP为443
-    - HTTP连接简单无状态， HTTPS更安全
-
----
-###  TCP握手(3)/挥手(4)：
-1. client发送报文1（询问）
-2. server回应报文2，携带对报文1的回应以及询问client是否做好通讯准备
-3. client发送报文3，回应对server报文2中的询问
-> ---数据传输---
-4. client发送报文4（FIN），用于关闭client到server的传送
-5. server接收后发送报文5（ACK），确认报文4的操作（报文4序号加1）
-6. server关闭连接，发送报文6（FIN）
-7. client对报文5回应，序号加1（ACK）
-
----
-### HTTPS加密方式
-- 加密方式通过``SSL/TLS``协议实现，核心是结合``非对称加密``和``对称加密``的混合加密机制，并依赖``数字证数``验证身份
-  - ``非对称加密``：安全性高，速度慢，交换密钥并验证服务器身份。算法如``RSA``、``ECDSA``、``DH``(密钥交换)
-    - 流程：
-      1. 客户端发起请求：浏览器向服务器发送支持的``SSL/TLS``版本和加密算法列表
-      2. 服务器返回证书：
-         - 服务器发送数字证书，含公钥、域名、颁发机构、有效期等信息
-         - 证书由CA（证书颁发机构）签发，浏览器内置信息的CA根证书
-      3. 客户端验证证书：
-         - 检查证书上是否过期、域名是否匹配、颁发机构是否受信任
-         - 用CA的公钥验证证书的数字签名，确保证书未被篡改
-  - ``对称加密``：速度快，加密大量数据，即加密实际传输的HTTP数据。算法如``AES-256``、``ChaCha20``（高效加密数据）
-    - 流程：
-      1. 生成会话密钥：客户端生成一个随机数作为对称加密的会话密钥（如AES密钥）
-      2. 加密会话密钥：用服务器的公钥（来自证书）加密会话密钥，发送给服务器
-      3. 服务器解密密钥：服务器用私钥解密，获取会话密钥
-      4. 对称加密通信：双方用会话密钥加密后续数据传输
-- 完整HTTPS握手流程
-  1. 客户端发送支持的加密套件和随机数
-  2. 服务器选择加密套件，发送证书和随机数
-  3. 客户端验证证书，生成会话密钥，并用服务器公钥加密（非对称加密）发送
-  4. 双方确认使用对称加密，完成握手
-  5. 后续数据通过非对称加密传输
-- 关键安全机制
-  - 证书链验证：确保服务器身份合法
-  - 加密算法协商：使用双方支持的算法
-  - 完整性校验：通过HMAC防止数据篡改
-  
-
----
-###  http请求头有哪些内容
-注意点 <code>:method:</code>, <code>:authority:</code>, <code>:path:</code>, <code>:scheme:</code>是因为使用http2协议传输且可以压缩传输体积
-
----
-### HTTP缓存
-- web缓存发现请求的资源被存储的时候，会拦截请求，返回该资源拷贝，而不会去源服务器重新下载
-- 种类：
-    - 私有缓存（浏览器缓存）
-    - 共享缓存（代理缓存）
-- 常见的HTTP缓存只能存储GET响应
-- 缓存控制
-    - cache-control: 请求头和响应头都支持
-      ```
-      Cache-Control: no-store //不得缓存任何请求和响应内容
-      Cache-Control: no-cache //缓存但重新验证，请求会发至服务器，服务器验证所描述缓存是否过期，未过期则使用本地缓存副本
-      Cache-Control: public
-      Cache-Control: private // 默认
-      Cache-Control: max-age=3156000 //最大缓存时间，距离请求发起的时间秒数
-      Cache-Control: must-revalidate //必须验证
-      ```
-    - Pragma头：效果与<code>Cache-Control: no-cache</code>相同，但不能完全替代，用于兼容
-    - 缓存驱逐：资源过了过期时间后，不会直接删除。当客户端发起一个请求，缓存检索到有对应的已过期副本，会先将此请求附加<code>If-None-Match</code>头，发给服务器，若服务器返回304（响应无实体信息）则表示副本是新鲜的，可以节省一些带宽，如判读已过期，则带有该资源的实体返回
-    - 缓存寿命：先看max-age，没有则看Expires（比较Expires和头Date属性的值），两者都没有则看Last-Modified(<code>寿命 = (Date - Last-Modified) * 10%</code>)
-    - 更新：<code>URL + 版本号/时间戳</code>
-    - Vary：<code>当前请求 Vary = 缓存请求头 Vary = 缓存响应头 Vary</code>，才使用缓存的响应。<code>Vary: User-Agent</code>可避免缓存服务器错误地把移动端内容输出到桌面端
-
----
-###  await在promise reject时是否继续进行，如何处理
-- await只能在异步函数(async function)中使用
-- await表达式会暂定当前异步函数执行，等待处理完成，如果正常处理(fulfilled)则继续执行，promise回调的resolve函数作为await表达式的值
-- promise reject的话会把异常原因抛出
-  ```js
-    async function aw () {
-      try {
-        let x = await Promise.reject(30)
-      } catch (e) {
-        console.log(e)
-      }
-    }
-    aw () // 30
-  ```
-
----
 ### 数据存储类型
 - 持久化存储：只有用户选择清理才会被清理
 - 临时存储：当最近一次使用时Storage limits达到限制时会被自动清理（LRU Policy）
     - LRU Policy: 磁盘空间满时，配额管理器按最近最少使用的源开始清理，直到浏览器不再超过限制
-
----
-### 浏览器存储
-- ``cookie``
-  - 携带在每个向服务器的请求中，适用于存储和服务器交换的数据
-  - 可以设置为持续时间或者基于session
-  - 明确区分域名
-  - 容量小（4KB左右）
-  - 可以通过设置为``HttpOnly``来防止XSS攻击；也可通过设置``Secure``来保证仅使用HTTPS来发送cookie
-- ``sessionStorage``
-  - 适用于有时效性的存储
-  - 当当前标签和窗口关闭时会被清理
-  - 存储容量``cookie`` < ``sessionStorage`` < ``localStorage``
-- ``localStorage``
-  - 适用于长期存储，浏览器关闭后仍保留
-  - 和同一域名内所有窗口标签所共有
-  - 三者之中拥有最大的存储容量（取决于不同浏览器）
-- ``IndexedDB``
-  - 异步操作（同步操作曾用于web workers，现已从规范中移除）
-  - 仅以``key-value``形式存储
-  - 何时触发``onupgradeneeded``
-      - 首次创建数据库时
-      - 升级数据库版本时
-  - ``createIndex``的作用：
-      - 提高查询效率
-      - 支持排序过滤
-      - 支持复杂查询
-
-| 存储       | ``Cookie``                | ``sessionStorage`` | ``localStorage``   |
-|----------|-----------------------|----------------|----------------|
-| 初始化      | 客户端/服务器端(``set-cookie``)  | 客户端        | 客户端     |
-| 生命周期     | 自设定                   | 标签页/窗口关闭  | 手动删除    |
-| 是否向服务器发送 | 是，通过请求头的``cookie``        | 否     | 否            |
-| 数据访问     | 同域窗口/标签页              | 同域窗口/标签页  | 同一标签页 |
-| 安全性      | JS不能个性Http不涉及Only的``cookie`` | 不涉及           | 不涉及    |
 
 ---
 ### 闭包
@@ -986,7 +935,7 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
 ### ``async/await``
 - 本质是``generator``的语法糖，基于``Promise``实现：通过``function*``（[生成器函数](#生成器函数function和生成器对象Generator)）定义，使用``yield``暂停执行，并可通过``.next()``恢复
 - ``async``: 本质是返回``Promise``的生成器函数
-- ``await``：相当于``yield``，暂停执行直到``Promise``完成，并由执行器自动处理后续逻辑
+- ``await``：相当于``yield``，暂停执行直到``Promise``完成，并由执行器自动处理后续逻辑，只能在异步函数``async function``中使用
 - 执行流程：
   1. 调用``async``: 立即返回一个``Promise``对象
   2. 遇到``await``: 暂停函数执行，等待其后的``Promise``解决。在此期间JS引擎会执行其他任务，保持单线程的响应性（通过事件循环）
@@ -1004,6 +953,17 @@ setInterval是将事件放在任务队列中，当空闲时才取事件执行，
   }
   ```
 - ``async/await`` VS ``回调函数/then链式调用``：``async/await``提供更简洁、同步化的语法，使错误处理也更简洁
+- ``await``在``Promise reject``时是否继续进行：会把异常原因抛出
+  ```js
+  async function aw () {
+    try {
+      let x = await Promise.reject(30)
+    } catch (e) {
+      console.log(e)
+    }
+  }
+  aw () // 30
+  ```
 
 ---
 ### JS创建对象的几种方法
@@ -1565,66 +1525,6 @@ if ( typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.reques
 ### Web Worker
 - 检测浏览器是否支持worker：``typeof Worker !== undefined``
 
----
-### 操作符的隐式转换
-- ``+``两边至少有一个``String``变量时，两边会隐匿转换为字符串；其他情况则两边会转换为数字
-  ```js
-  1 + '23' // '123'
-  1 + false // 1
-  '1' + false // '1false'
-  false + true // 1
-  1 + Symbol() // uncaught typeerror
-  undefined + undefined = NaN
-  ```
-- 非加法运算符，只要有一边为数字，则另一边就会被转为数字
-- ``==``两边值都转为``Number``类型
-  ```js
-  3 == true // => 3 == 1 => false
-  '0' == false // 0 == 0 => true
-  ```
-  - ``==`` vs ``===``
-    - ``==``强制类型转换， ``===``不强制
-    - ``===``同时比较值和类型，``==``不是
-    ```js
-    null == undefined // true
-    [] == false // true
-    1 == [1] // true
-    0 == ''// true
-    0 == '0' // true
-    '' == '0' // false
-    ```
-- ``<``,``>``字符串按字母表顺序比较，其他情况转为数字再比较
-  ```js
-  'a' < 'b' // true
-  '12' < 13 // true
-  false > -1 // true
-  ```
-- 对象会被``ToPrimitive``转换为基本类型再转换
-  ```js
-  let a = {}
-  a > 2 // false
-  // 以下为执行过程
-  a.valueOf() // ToPrimitive默认type为number，因此先valueOf
-  a.toString() // '[object Object]'
-  Number(a.toString()) // NaN
-  NaN > 2 // false
-  ```
-  例2:
-  ```js
-  let a = {name: 'Jack'}
-  let b = {age: 18}
-  a + b // '[object Object][object Object]'
-  ```
-
----
-### 展开运算符``...``
-- 字符串转单字数组
-  ```js
-  let str = 'mysksksks'
-  str.split('') // ['m', 'y', 's', 'k', 's', 'k', 's', 'k', 's']
-  [...str] // ['m', 'y', 's', 'k', 's', 'k', 's', 'k', 's']
-  ```
-  
 ---
 ### 尾调用
 - 函数最后一步调用另一个函数，并直接返回期执行结果，不作额外计算或操作

@@ -196,3 +196,9 @@ module.exports = {
 | 生产环境构建 | 全量打包 + 优化                   | ``Rollup``打包（默认）或保留``ESM`` |
 | 输出格式   | 多种支持(``CommonJS``、``ESM``等) | 默认``ESM``，传统格式打包需插件        |
 | 浏览器支持  | 支持``IE``等旧浏览器               | 对浏览器版本有要求，仅支持现代浏览器         |
+
+
+---
+###  ES6转ES5思路及babel原理
+- 代码字符串解析成AST（抽象语法树/Abstract Syntax Tree）: ES6 AST → ES5 AST → 再次生成代码字符串
+- babel转译：解析parse → 转换transfer(babel-traverse) → 生成generate (babel-generator)
