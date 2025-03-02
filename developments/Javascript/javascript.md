@@ -1627,9 +1627,56 @@ if ( typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.reques
   
 ---
 ### 尾调用
-- 函数最后一步调用另一个函数
-- 因为在函数中调用另一个函数时会保留当前执行的上下文，再新建另一个执行上下文存入栈中。使用尾调用时因为是函数最后一步可以不必保留当前执行上下文，节省了内存
+- 函数最后一步调用另一个函数，并直接返回期执行结果，不作额外计算或操作
+- 尾调用优化（Tail Call Optimization/TCO）：在支持TCO的JS引擎中，尾调用不会增加调用栈的尝试，而是直接复用当前栈桢，提高性能并避免栈溢出
 - ES6的尾调用只在严格模式下开启
+```js
+function tailCall(x) {
+  return fn(x)
+}
+function fn (y) {
+  return y * 2
+}
+console.log(tailCall(3))
+```
+- 应用
+  - 尾递归：递归函数如果满足尾调用条件，可以优化为尾递归，避免调用栈溢出，提高性能
+    ```js
+    // 普通递归
+    function factorial(n) {
+      if (n === 1) return 1
+      return n * factorial(n-1) // 返回时仍需n*操作，导致递归尝试过大时栈溢出
+    }
+    console.log(factorial(5))
+    
+    // 尾递归, 优化需要JS引擎支持，如safari。V8未默认启用TCO，因此大多数情况下递归优化不会生效
+    function factorialTail(n, acc = 1){
+      if (n === 1) return acc
+      return factorialTail(n - 1, n * acc)
+    }
+    ```
+  - 函数式编辑
+    ```js
+    const sum = (arr, total = 0) => {
+      if(arr.length === 0) return total
+      return sum(arr.slice(1), total + arr[0])
+    }
+    console.log(sum([1, 2, 3, 4, 5]))
+    ```
+  - 实现状态机
+    ```js
+    function stateMachine(state) {
+      switch (state) {
+        case 'idle':
+          return stateMachine('running')
+        case 'running':
+          return stateMachine('completed')
+        case 'completed':
+          return 'Done'
+      }
+    }
+    console.log(stateMachine('idle'))
+    ```
 
 ---
 ### ``for...of(ES6)`` vs ``for...in``
