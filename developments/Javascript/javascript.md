@@ -993,7 +993,7 @@ const o2 = Object.create(objPrototype)
 o2.a = 1
 o2.show() // a is 1
 ```
-- ES5 Class
+- ES6 Class
 ```js
 class Person {
   constructor(name, age){
@@ -1022,207 +1022,148 @@ person.greet() // My name is Luke and 15
 
 ---
 ### 函数调用方式
-1. 一般形式的函数调用: 在浏览器中，this表示全局对象，即window，如在严格模式下，this为undefined
-   ```js
-   function foo () {
-     console.log(this)
-   }
-   foo() //non-strict: window. strict: undefined
-   ```
-2. 作为对象的方法调用: 方法一定要要宿主对象引导调用，即**对象.方法（参数）**。this表示引导方法的对象（宿主对象）
-   ```js
-   function foo () {
-     console.log(this)
-   }
-   let o = {name: 'banana'}
-   o.fn = foo
-   o.fn() // {name: 'banana', fn: f}
-   const fnStandalone = o.fn // this丢失上下文，不再提向o
-   fnStandalone() // non-strict: window. strict: undefined
-   ```
-   ```js
-   var length = 10
-   function fn () {
-     console.log(this.length)
-   }
-   var obj = {
-     length: 5,
-     method: function(fn) {
-       fn()
-       arguments[0]() //this指向arguments, 即调用this.length时指的是arguments的长度
-     }
-   }
-   obj.method(fn, 1)// 输出 10, 2
-   obj.method(fn, 1, 2, 3) //输出 10, 4
-   ```
-3. call & apply(上下文调用模式): call(每一个参数都是独立的)，apply(参数对象数组)
-   ```js
-   function foo (num1, num2) {
-     return num1 + num2
-   }
-   let o = { name: "Lee" }
-   foo.apply(null, [123, 567]) //以window为上下文执行apply
-   foo.apply(o, [123, 567]) //以o为上下文执行apply
-   foo.call(null, 123, 456)
-   foo.call(null, ...[123, 456]) // ES6
-   ```
-4. bind：使用明确的this值生成一个新函数
+- 一般形式的函数调用: 在浏览器中，this表示全局对象，即window，如在严格模式下，this为undefined
+  ```js
+  function foo () {
+    console.log(this)
+  }
+  foo() //non-strict: window; strict: undefined
+  ```
+- 作为对象的方法调用: 方法一定要要宿主对象引导调用，即**对象.方法（参数）**。``this``表示引导方法的对象（宿主对象）
+  ```js
+  function foo () {
+    console.log(this)
+  }
+  let o = {name: 'banana'}
+  o.fn = foo
+  o.fn() // {name: 'banana', fn: f}
+  const fnStandalone = o.fn // this丢失上下文，不再提向o
+  fnStandalone() // non-strict: window. strict: undefined
+  ```
+  ```js
+  var length = 10
+  function fn () {
+    console.log(this.length)
+  }
+  var obj = {
+    length: 5,
+    method: function(fn) {
+      fn()
+      arguments[0]() //this指向arguments, 即调用this.length时指的是arguments的长度
+    }
+  }
+  obj.method(fn, 1)// 输出 10, 2
+  obj.method(fn, 1, 2, 3) //输出 10, 4
+  ```
+- ``call``&``apply``(上下文调用模式): ``call``(每一个参数都是独立的)，``apply``(参数对象数组)
+  ```js
+  function foo (num1, num2) {
+    return num1 + num2
+  }
+  let o = { name: "Lee" }
+  foo.apply(null, [123, 567]) //以window为上下文执行apply
+  foo.apply(o, [123, 567]) //以o为上下文执行apply
+  foo.call(null, 123, 456)
+  foo.call(null, ...[123, 456]) // ES6
+  ```
+- ``bind``：使用明确的``this``值生成一个新函数
+  ```js
+  function showThis () {
+    console.log(this)
+  }
+  const obj = {name: 'Banana'}
+  const boundFunc = showThis.bind(obj)
+  boundFunc() // {name: 'Banana'}
+  ```
+- new间接调用（构造器模式）：``this``指函数本身
+  ``` js
+  var Person = function() {
+    this.name = "码农"
+    this.sayHello = function() {
+      console.log("hello")
+    }
+  }
+  var p = new Person() 
+  p.sayHello() // 输出hello
+  ```
+  - 执行过程：
+    1. 定义函数Person时，不执行函数体，所以javascript解释器不知道函数的内容
+    2. 接下来执行``new``关键字，创建对象，解释器开辟内存，得对对象的引用，新对象引用交给函数
+    3. 执行函数体，将传来的对象交给``this``, 即在构造方法中，``this``是对``new``创建出来的对象
+    4. 为``this``添加成员
+    5. 函数结束，返回``this``，将``this``交给左边的变量
+  - 所有需要由对象使的属性，必须用``this``引导
     ```js
-    function showThis () {
+    function Foo () {
+      getName = function() {
+        console.log(1)
+      }
+      return this
+    }
+    Foo.getName = function() {
+      console.log(2)
+    }
+    Foo.prototype.getName = function() {
+      console.log(3)
+    }
+    var getName = function () {
+      console.log(4)
+    }
+    function getName () {
+      console.log(5)
+    }
+    Foo.getName() //输出 2
+    getName() //输出 4
+    Foo().getName // 输出 1，执行Foo()时覆写全局getName, 再返回this, this指向window, 所以window.getName此时已变成console.log(1)
+     getName() //输出 1
+    new Foo.getName() //输出 2 , 以Foo.getName为构造函数实例化对象
+    new Foo().getName() //输出 3， 实例new Foo()自身上没有getName，从原型Foo.prototype上找
+    new new Foo().getName() // 输出3， 等于new (new foo().getName)() , 依旧是从原型上找
+    ```
+    - 构造器中的return意义变化：如果return对对象，则保留原意，如果return非对象或没有return语句，就返回this
+    ```js
+    var foo1 = function () {
+      this.name = "张三"
+      return { name: "李四" }
+    }
+    var foo2 = function () {
+      this.name = "张三"
+      return "李四"
+    }
+    var p1 = new foo1()
+    var p2 = new foo2()
+    console.log(p1.name) //李四
+    console.log(p2.name) //张三
+    ```
+- class
+  ```js
+  class Person {
+    constructor(name) {
+      this.name = name
+    }
+    showThis() {
       console.log(this)
     }
-    const obj = {name: 'Banana'}
-    const boundFunc = showThis.bind(obj)
-    boundFunc() // {name: 'Banana'}
-    ```
-5. new间接调用（构造器模式）：this指函数本身
-   ``` js
-   var Person = function() {
-     this.name = "码农"
-     this.sayHello = function() {
-       console.log("hello")
-     }
-   }
-   var p = new Person() 
-   p.sayHello() // 输出hello
-   ```
-    - 执行过程：
-        1. 定义函数Person时，不执行函数体，所以javascript解释器不知道函数的内容
-        2. 接下来执行<code>new</code>关键字，创建对象，解释器开辟内存，得对对象的引用，新对象引用交给函数
-        3. 执行函数体，将传来的对象交给this, 即在构造方法中，this是对new创建出来的对象
-        4. 为this添加成员
-        5. 函数结束，返回this，将this交给左边的变量
-    - 所有需要由对象使的属性，必须用this引导
-   ```js
-   function Foo () {
-     getName = function() {
-       console.log(1)
-     }
-     return this
-   }
-   Foo.getName = function() {
-     console.log(2)
-   }
-   Foo.prototype.getName = function() {
-     console.log(3)
-   }
-   var getName = function () {
-     console.log(4)
-   }
-   function getName () {
-     console.log(5)
-   }
-   Foo.getName() //输出 2
-   getName() //输出 4
-   Foo().getName // 输出 1，执行Foo()时覆写全局getName, 再返回this, this指向window, 所以window.getName此时已变成console.log(1)
-   getName() //输出 1
-   new Foo.getName() //输出 2 , 以Foo.getName为构造函数实例化对象
-   new Foo().getName() //输出 3， 实例new Foo()自身上没有getName，从原型Foo.prototype上找
-   new new Foo().getName() // 输出3， 等于new (new foo().getName)() , 依旧是从原型上找
-   ```
-    - 构造器中的return意义变化：如果return对对象，则保留原意，如果return非对象或没有return语句，就返回this
-   ```js
-   var foo1 = function () {
-     this.name = "张三"
-     return {
-       name: "李四"
-     }
-   }
-   var foo2 = function () {
-     this.name = "张三"
-     return "李四"
-   }
-   var p1 = new foo1()
-   var p2 = new foo2()
-   console.log(p1.name) //李四
-   console.log(p2.name) //张三
-   ```
-6. class
-    ```js
-    class Person {
-      constructor(name) {
-        this.name = name
-      }
-      showThis() {
-        console.log(this)
-      }
-    }
-    const person = new Person('Banana')
-    person.showThis() // Person {name: Banana}
-    const showThisStandalone = person.showThis
-    showThisStandalone() // undefined, 因为类仅在严格模式下执行
-    ```
+  }
+  const person = new Person('Banana')
+  person.showThis() // Person {name: Banana}
+  const showThisStandalone = person.showThis
+  showThisStandalone() // undefined, 因为类仅在严格模式下执行
+  ```
 
 ---
-### 跨域方法
-- 同源策略：协议，域名，端口全都一致
-- 方法：
-    - 以下三个标签允许跨域加载资源
-      ```html
-      <img src="xxx" />
-      <script src="xxx" />
-      <link    
-      ```
-    - Jsonp: 仅支持get方法
-        - 本质是利用<code>script</code>来实现跨域
-        - 调用失败时无不会返回http状态码
-        - 不安全（xss）
-      ```js
-      function jsonp ({url, params, cb}) {
-        return new Promise((resolve, reject) => {
-          let script = document.createElement("script")
-          window[cb] = function(data) {
-            resolve(data)
-            document.body.removeChild("script")
-          }
-           params = {...params, cb}
-           let arr = []
-           for(let key in params) {
-             arr.push(`${key}=${params[key]}`)
-           }
-           script.src = `${url}?${arr.join("&")}`
-           document.body.appendChild(script)
-        })
-      }
-      jsonp({
-        url: "",
-        params: {a: "1"},
-        cb: "show"
-      }).then(res => {
-        console.log(res)
-      })
-      ```
-    - cors: 需浏览器和服务器同时支持，几乎所有浏览器都支持，ie8和9需通过<code>XDomainRequest</code>实现
-        - 简单请求
-            - 请求方法仅限于<code>GET</code>, <code>HEAD</code>, <code>POST</code>
-            - Content-Type仅限于<code>text/plain</code>, <code>application/form-urlencoded</code>, <code>multipart/form-data</code>
-            - 配置<code>Access-Control-Allow-Origin</code>
-        - 复杂请求：浏览器先自动发送一个options请求，如果发现支持该请求再向真正的请求发送到后端，不支持则在控制台抛错
-            - 请求方法和Content-Type是除简单请求外的
-    - postMessage: 不同源的脚本采用异步方式进行有限通信
-      ```js
-      otherWindow.postMessage(message, targetOrigin, [transfer]) //otherwindow,如iframe的contentWindow
-      ```
-    - window.name
-    - location.hash
-    - document.domain: 仅限主域相同，子域不同
-    - [websocket](#服务器通信): 保证websocket会话的唯一性-建立链接的url加时间戳
-    - nginx
-    - http-proxy
-
----
-### Promise相关
-- Promise及其状态
-    - 表示一个**异步操作**的最终完成 (或失败)及其结果值
-    - 状态：
-        - pending: 初始状态
-        - fulfilled：操作成功完成
-        - reject：操作失败
-    - fulfilled + reject = settled
-    - Promise.resolve(fulfilled)静态方法
+### ``Promise``
+- ``Promise``及其状态
+  - 表示一个**异步操作**的最终完成 (或失败)及其结果值
+  - 状态：
+    - ``pending``: 初始状态
+    - ``fulfilled``：操作成功完成
+    - ``reject``：操作失败
+  - ``fulfilled`` + ``reject`` = ``settled``
+  - ``Promise.resolve(fulfilled)``静态方法
 - Promise中断：Promise本质上是无法被终止的
-    - 通过``Promise.race()``使其中一个promise reject的情况，无视另外的promise的结果去达到中断的目的
-      ```typescript
+  - 通过``Promise.race()``使其中一个promise reject的情况，无视另外的promise的结果去达到中断的目的
+    ```typescript
       interface CancellablePromiseFactory<T = unknown> extends Promise<T> {
         abort?: (reasonToAbort: any) => void 
       }
@@ -1260,7 +1201,7 @@ person.greet() // My name is Luke and 15
       //finally
       //after 10s
   
-      ```
+    ```
       ```js
       function abortWrapper(p1) {
         let abort
@@ -1272,9 +1213,9 @@ person.greet() // My name is Luke and 15
       const req = abortWrapper(request)
       req.the(res => console.log(res)).catch(e => console.log(e))
       setTimeout(() => req.abort('用户手动终止请求'), 2000)
-      ```
-    - 中断调用链：在``then/catch``的最后一行返回一个永远``pending``的``promise``
-- 实现Promise.all()
+    ```
+  - 中断调用链：在``then/catch``的最后一行返回一个永远``pending``的``promise``
+- 实现``Promise.all()``
   ```js
   Promise.myAll = promises => {
     return new Promise ((resolve, reject) => {
@@ -1299,7 +1240,7 @@ person.greet() // My name is Luke and 15
 
 ---
 ### <span id="requestAnimationFrame">window.requestAnimationFrame使用</span>
-- 最平滑的动画最佳循环间隔为<code>1000ms/显示器刷新频率</code>(例：60Hz)
+- 最平滑的动画最佳循环间隔为**1000ms/显示器刷新频率**(例：60Hz)
 - 回调函数在下一次``重绘``前由更新动画帧调用
 - 会将每一帧中的所有DOM操作集中起来，在一次重绘或回流中就完成（**隐藏或不可见元素除外**），时间间隔紧跟浏览器刷新频率
 - 应用：渲染几万条数据不卡住界面

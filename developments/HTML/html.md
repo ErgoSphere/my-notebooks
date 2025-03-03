@@ -152,7 +152,7 @@
     ```
 
 ---
-###  安全防范 [Ref](https://juejin.cn/post/6844904020562165773)
+### 安全防范 [Ref](https://juejin.cn/post/6844904020562165773)
 1. XSS注入
     - CSP开启白名单：设置HTTP Header的``Content-Security-Policy``
     - 使用转义字符
@@ -348,3 +348,48 @@
   - 定时触发器线程
   - 事件触发线程
   - 异步http请求线程
+
+---
+### 跨域方法
+- 同源策略：协议，域名，端口全都一致
+- 方法：
+  - 以下三个标签允许跨域加载资源: ``<img>``、``<script>``、``<link>``
+  - JSONP:
+    - 仅支持``GET``方法
+    - 客户端通过``<script>``标签发起跨域请求，服务器返回一段JS代码，客户端通过执行这段代码获取数据
+    - 调用失败时无不会返回HTTP状态码
+    - 不安全（xss）
+    ```js
+    function jsonp ({url, params, cb}) {
+      return new Promise((resolve, reject) => {
+        let script = document.createElement("script")
+        window[cb] = function(data) {
+          resolve(data)
+          document.body.removeChild("script")
+        }
+        params = {...params, cb}
+        let arr = []
+        for(let key in params) {
+          arr.push(`${key}=${params[key]}`)
+        }
+        script.src = `${url}?${arr.join("&")}`
+        document.body.appendChild(script)
+      })
+    }
+    jsonp({
+      url: "",
+      params: {a: "1"},
+      cb: "show"
+      }).then(res => {
+        console.log(res)
+      })
+    ```
+  - CORS: 需浏览器和服务器（设置响应头）同时支持，几乎所有浏览器都支持，ie8和9需通过``XDomainRequest``实现
+    - 当浏览器发起跨域请求时，浏览器先发送一个**预检请求**（``OPTIONS``请求），以确定服务器是否允许跨域。如果允许则发送实际请求，并附带相应响应头
+  - 代理PROXY：通过代理服务器转发请求。前端将请求发送到同源服务器，服务器再将请求转发至目标服务器
+  - ``Websocket``:
+    - ``Websocket``协议本身不受同源策略限制
+    - 安全性由服务器检查``Origin``头，且使用``wss://``协议
+  - ``iframe`` + ``postMessage``
+    - 使用``iframe``嵌入不同域的网页，父页面通过``postMessage``向``iframe``发送消息
+    - ``iframe``页面通过监听``message``事件接收并处理父页面发来的消息
