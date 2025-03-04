@@ -35,6 +35,215 @@ typeof BigInt("1") = "bigint"
     ```
 
 ---
+### 栈，堆，及内存管理
+- 基本类型（``Boolean``, ``undefined``等）赋值是**值赋值（栈空间）**; 引用类型（``Object``）赋值是**地址赋值（堆空间）**
+   ```js
+   //值赋值
+   var a = 1
+   var b = a
+   a = 2
+   console.log(b) //1
+   //地址赋值
+   var a1 = {name: "x"}
+   var b1 = a1
+   a1.name = "y"
+   console.log(b1) // {name: "y"}
+   ```
+- 内存管理: JS在创建变量时自动分配了内存，并且在不使用的时候自动释放（垃圾回收）。
+  - 垃圾回收机制（GC）
+    - 回收栈空间：通过向下移动ESP指针来销毁存放在栈空间的执行上下文
+      1. JS执行代码时，主线程上存在ESP（Extended stack pointer）指针，指向调用栈中当前正在执行的上下文（假设为``Foo()``）。
+      2. ``Foo()``执行完成后，ESP向下指向，此时需要销毁``Foo()``
+      3. 有新的执行上下文进来的时候，可以直接覆盖``Foo()``这块内存空间
+        - 回收堆空间：
+          1. 标记空间中的活动对象和非活动对象
+          2. 回收非活动对象所占用的内存
+          3. 内存整理：进行频繁的回收时可能存在大量不连续的碎片，需要分配一个占用较大连续内存空间的对象时，可能存在内存不足的现象
+        - 副垃圾回收器（小对象）：把空间对半分成两个区域，一半是对象区域，一半空闲区域，新加入的对象都进入对象区，满的时候
+          1. 对区域内对象标记（活动/非活动）
+          2. 将对象区的活动对象复制到空闲区域并有序排列，复制完后，对象区和空闲区翻转。因此新的空闲区是没有碎片的，所以不需要内存整理
+        - 主垃圾回收器（大对象）
+          1. 遍历调用栈，看对象是否被引用，引用的为活动对象，没被引用的为垃圾数据
+          2. 清理垃圾数据
+          3. 内存整理
+  - v8会自动执行垃圾回收，由于js也运行在主线程上，垃圾回收会打断JS运行，可能会造成页面卡顿，所以v8把垃圾回收拆成小任务，穿插在js中执行
+- 内存泄漏: 应用不再需要的内存未得到释放
+  - 全局变量造成
+    ```js
+    function foo () {
+      a = "this is gloabl variable" //未声明
+      window.b = "global" //设置为全局变量window的属性
+      this.c = "global" //挂载到全局变量属性上
+    }
+    ```
+    - 使用严格模式避免意外创建全局变量，减少使用全局变量
+    - 使用全局变量时确保在处理完数据放置null或重新分配
+  - 未清理的定时器（``setInterval``），未移除的事件监听器（``addEventListener``）
+  - 多处引用：多个变量引用同一个对象，或对table中的某个Cell引用也将导致table保存在内存中
+    ```js
+    let elements = {
+      button: document.getElementById("button")
+    }
+    function doStuff () {
+      button.click()
+    }
+    function removeButton () {
+      document.body.removeChild(document.getElementById("button"))
+    }
+    //#button被两个变量引用，一个是elements，一个在DOM树中，回收时需要将两个引用都释放
+    //removeButton仅仅释放了DOM中的button引用，elements仍保持引用，所以button不会被垃圾回收
+    ```
+  - [闭包](#闭包)：即使作用域已经结束，仍访问定义在作用域内的变量，所以具有记忆周围环境(context)的功能
+    ```js
+    let newElem
+    function outer () {
+      let someText = new Array(1000000)
+      let elem = newElem 
+      function inner () { //闭包inner
+        if (elem) return someText
+      }
+      return function () {} //闭包匿名函数，被返回并赋值给newElem
+      //相同父作域的闭包能共享context， 所以someText和elem被inner()和匿名函数共享
+    }
+    setInterval(function() {
+      newElem = outer() //只要newElem还引用匿名函数，则someText和elem就不会被垃圾回收
+    }, 10)
+    //outer()执行了elem = newElem, newElem会引用上一次调用的匿名函数，即第n次调用outer()会保持第n-1次调用的匿名函数
+    //解决: 计时器中的函数改为 newElem = outer()()
+    ```
+  - ``console.log()``: 打印这部份对象的内存不会被回收
+- 检测内存
+  - 浏览器：使用```performance.memory```API，需在Chrome中通过``chrome://flags/#enable-precise-memory-info``启用标志，或启动时添加``--enable-precise-memory-info``参数
+  - Node.js环境：使用``process.memoryUsage()``，或者启动Node.js时添加``--inspect``参数
+  - 第三方工具：``clinic.js``、``heapdump``等
+
+---
+### JS创建对象的几种方法
+- 直接构成使用
+```js
+let o = {
+  a: 1,
+  b2
+}
+```
+- ``Object()``构造器
+```js
+const o = new Object()
+o.a = 1
+```
+- 原型链方式：以现有对象作为原型生成新对象
+```js
+const obj = {a:  1}
+const o1 = Object.create(obj)
+
+const objPrototype = {
+  show () {
+    console.log(`a is ${this.a}`)
+  }
+}
+const o2 = Object.create(objPrototype)
+o2.a = 1
+o2.show() // a is 1
+```
+- ES6 Class
+```js
+class Person {
+  constructor(name, age){
+    this.name = name
+    this.age = age
+  }
+  greet = function () {
+    console.log(`My name is ${this.name} and I'm ${this.age}`)
+  }
+}
+const person = new Person('Luke', 15)
+person.greet() // My name is Luke and 15
+```
+- 构造函数
+```js
+function Person (name, age){
+  this.name = name
+  this.age = age
+  this.greet = function () {
+    console.log(`My name is ${this.name} and I'm ${this.age}`)
+  }
+}
+const person = new Person('Luke', 15)
+person.greet() // My name is Luke and 15
+```
+
+---
+### JS对象转换
+1. 对象到字符串
+    - 如对象有``toString()``，则调用该方法
+    - 如无``toString()``或此方法不返回一个原始值，则调用``valueOf()``
+    - 两者都无，此时抛出一个类型错误异常
+2. 对象到数字
+    - 如有``valueOf()``，则调用该方法
+    - 如无``valueOf()``，则调用``toString()``
+    - 两者都无，此时抛出一个类型错误异常
+
+---
+### 操作符的隐式转换
+- ``+``两边至少有一个``String``变量时，两边会隐匿转换为字符串；其他情况则两边会转换为数字
+  ```js
+  1 + '23' // '123'
+  1 + false // 1
+  '1' + false // '1false'
+  false + true // 1
+  1 + Symbol() // uncaught typeerror
+  undefined + undefined = NaN
+  ```
+- 非加法运算符，只要有一边为数字，则另一边就会被转为数字
+- ``==``两边值都转为``Number``类型
+  ```js
+  3 == true // => 3 == 1 => false
+  '0' == false // 0 == 0 => true
+  ```
+    - ``==`` vs ``===``
+        - ``==``强制类型转换， ``===``不强制
+        - ``===``同时比较值和类型，``==``不是
+      ```js
+      null == undefined // true
+      [] == false // true
+      1 == [1] // true
+      0 == ''// true
+      0 == '0' // true
+      '' == '0' // false
+      ```
+- ``<``,``>``字符串按字母表顺序比较，其他情况转为数字再比较
+  ```js
+  'a' < 'b' // true
+  '12' < 13 // true
+  false > -1 // true
+  ```
+- 对象会被``ToPrimitive``转换为基本类型再转换
+  ```js
+  let a = {}
+  a > 2 // false
+  // 以下为执行过程
+  a.valueOf() // ToPrimitive默认type为number，因此先valueOf
+  a.toString() // '[object Object]'
+  Number(a.toString()) // NaN
+  NaN > 2 // false
+  ```
+  例2:
+  ```js
+  let a = {name: 'Jack'}
+  let b = {age: 18}
+  a + b // '[object Object][object Object]'
+  ```
+
+---
+### 展开运算符``...``
+- 字符串转单字数组
+  ```js
+  let str = 'mysksksks'
+  str.split('') // ['m', 'y', 's', 'k', 's', 'k', 's', 'k', 's']
+  [...str] // ['m', 'y', 's', 'k', 's', 'k', 's', 'k', 's']
+  ```
+
+---
 ### 普通函数与箭头函数
 - 箭头函数没有**自己的**``this``，只从自己作用域链的上一层继承``this``。``call``、``apply``和``bind``等方法不能改变箭头函数中``this``的指向
   ```js
@@ -90,6 +299,245 @@ typeof BigInt("1") = "bigint"
     ```
 
 ---
+### 匿名函数
+- 可防止变量污染
+```js
+(function () {
+  var x = 10
+  console.log(x) // 10
+})()
+console.log(typeof x) // undefined
+```
+
+---
+### 生成器函数``function*``和生成器对象``Generator``
+- 使用``function*``关键字声明一个生成器函数
+- 生成器函数内部可以通过``yield``暂停
+- 调用生成器函数会返回一个生成器对象， 即``Generator``实例
+- 生成器对象遵守迭代器协议（Iterator Protocol），支持``for...of``遍历，可通过``.next()``逐步执行（或``.return()``、``.throw``控制执行），保存函数的执行上下文（暂停/恢复状态）
+- 工作流程：
+  ```js
+  // 1.定义生成器函数
+  function* counter() {
+    let count = 0
+    while(true) {
+      yield count++
+    }
+  }
+  // 2.创建生成器对象
+  const gen = counter()
+  // 3.逐步执行
+  console.log(gen.next().value) // 0
+  console.log(gen.next().value) // 1
+  console.log(gen.next().value) // 2
+  ```
+- 应用场景：
+    - 惰性求值：按需生成数据，如无限序列等
+    - 异步控制：与``Promise``结合，实现类似``async/await``效果
+    - 状态机：管理复杂的状态流转逻辑
+    - 自定义迭代：为对象实现可迭代接口
+- 与普通函数区别:
+
+  |       | ``function*``     | ``function``  | 
+    |-------|-------------------|---------------|
+  | 执行方式  | 可暂停/恢复（``yield``） | 一次性执行到底       |
+  | 返回值类型 | 返回``Generator``   | 返回``return``值 | 
+  | 内容占用  | 保留执行上下文（利于大数据处理）  | 执行上下文后销毁      | 
+
+---
+### 函数调用方式
+- 一般形式的函数调用: 在浏览器中，this表示全局对象，即window，如在严格模式下，this为undefined
+  ```js
+  function foo () {
+    console.log(this)
+  }
+  foo() //non-strict: window; strict: undefined
+  ```
+- 作为对象的方法调用: 方法一定要要宿主对象引导调用，即**对象.方法（参数）**。``this``表示引导方法的对象（宿主对象）
+  ```js
+  function foo () {
+    console.log(this)
+  }
+  let o = {name: 'banana'}
+  o.fn = foo
+  o.fn() // {name: 'banana', fn: f}
+  const fnStandalone = o.fn // this丢失上下文，不再提向o
+  fnStandalone() // non-strict: window. strict: undefined
+  ```
+  ```js
+  var length = 10
+  function fn () {
+    console.log(this.length)
+  }
+  var obj = {
+    length: 5,
+    method: function(fn) {
+      fn()
+      arguments[0]() //this指向arguments, 即调用this.length时指的是arguments的长度
+    }
+  }
+  obj.method(fn, 1)// 输出 10, 2
+  obj.method(fn, 1, 2, 3) //输出 10, 4
+  ```
+- ``call``&``apply``(上下文调用模式): ``call``(每一个参数都是独立的)，``apply``(参数对象数组)
+  ```js
+  function foo (num1, num2) {
+    return num1 + num2
+  }
+  let o = { name: "Lee" }
+  foo.apply(null, [123, 567]) //以window为上下文执行apply
+  foo.apply(o, [123, 567]) //以o为上下文执行apply
+  foo.call(null, 123, 456)
+  foo.call(null, ...[123, 456]) // ES6
+  ```
+- ``bind``：使用明确的``this``值生成一个新函数
+  ```js
+  function showThis () {
+    console.log(this)
+  }
+  const obj = {name: 'Banana'}
+  const boundFunc = showThis.bind(obj)
+  boundFunc() // {name: 'Banana'}
+  ```
+- new间接调用（构造器模式）：``this``指函数本身
+  ``` js
+  var Person = function() {
+    this.name = "码农"
+    this.sayHello = function() {
+      console.log("hello")
+    }
+  }
+  var p = new Person() 
+  p.sayHello() // 输出hello
+  ```
+    - 执行过程：
+        1. 定义函数Person时，不执行函数体，所以javascript解释器不知道函数的内容
+        2. 接下来执行``new``关键字，创建对象，解释器开辟内存，得对对象的引用，新对象引用交给函数
+        3. 执行函数体，将传来的对象交给``this``, 即在构造方法中，``this``是对``new``创建出来的对象
+        4. 为``this``添加成员
+        5. 函数结束，返回``this``，将``this``交给左边的变量
+    - 所有需要由对象使的属性，必须用``this``引导
+      ```js
+      function Foo () {
+        getName = function() {
+          console.log(1)
+        }
+        return this
+      }
+      Foo.getName = function() {
+        console.log(2)
+      }
+      Foo.prototype.getName = function() {
+        console.log(3)
+      }
+      var getName = function () {
+        console.log(4)
+      }
+      function getName () {
+        console.log(5)
+      }
+      Foo.getName() //输出 2
+      getName() //输出 4
+      Foo().getName // 输出 1，执行Foo()时覆写全局getName, 再返回this, this指向window, 所以window.getName此时已变成console.log(1)
+       getName() //输出 1
+      new Foo.getName() //输出 2 , 以Foo.getName为构造函数实例化对象
+      new Foo().getName() //输出 3， 实例new Foo()自身上没有getName，从原型Foo.prototype上找
+      new new Foo().getName() // 输出3， 等于new (new foo().getName)() , 依旧是从原型上找
+      ```
+        - 构造器中的return意义变化：如果return对对象，则保留原意，如果return非对象或没有return语句，就返回this
+      ```js
+      var foo1 = function () {
+        this.name = "张三"
+        return { name: "李四" }
+      }
+      var foo2 = function () {
+        this.name = "张三"
+        return "李四"
+      }
+      var p1 = new foo1()
+      var p2 = new foo2()
+      console.log(p1.name) //李四
+      console.log(p2.name) //张三
+      ```
+- class
+  ```js
+  class Person {
+    constructor(name) {
+      this.name = name
+    }
+    showThis() {
+      console.log(this)
+    }
+  }
+  const person = new Person('Banana')
+  person.showThis() // Person {name: Banana}
+  const showThisStandalone = person.showThis
+  showThisStandalone() // undefined, 因为类仅在严格模式下执行
+  ```
+
+---
+### ES6 Class 详解 （pending: 需和其他地方整合）
+- **类的构造函数（``constructor``）**: 每个类都可以有一个且只能有一个自己的构造函数。当通过``new``调用一个类时，这个类就会调用自己的``consturctor``，可在创建对象时给类传递参数，执行过程如下
+    1. 在内存中开辟一块新的空间用于创建新对象
+    2. 在这个对象内部的``__proto__``属性会赋值为该类的``prototype``属性
+    3. 构造函数内的``this``，指向创建出来的新对象
+    4. 执行构造函数内部代码
+    5. 如果函数无返回对象，则返回``this``
+  ```js
+  class Person {
+    constructor (name) {
+      this.name = name
+    }
+  }
+  let person = new Person('Mark')
+  console.log(person) // Person { name: 'Mark' }
+  // 类本身指向构造函数
+  console.log(Person === Person.prototype.constructor) // true
+  ```
+  在类上的所有方法都会放在``prototype``属性上
+- **类的属性**: 实例的属性定须定义在类的方法里，如上例在构造函数中定义``name``属性
+    - 静态属性：当把一个属性赋值给类本身而非``prototype``时。可直接通过类来访问，无需实例中访问
+      ```js
+      class Person {
+        static name = 'Luke'
+      }
+      console.log(Person.name)
+      ```
+    - 私有属性：只能在类中读写，不能通过外部引用
+      ```js
+      class Person {
+        #age;
+        constructor(name, age) {
+          this.name = name
+          this.#age = age
+        }
+      }
+      let person = new Person('Rose', 20)
+      console.log(person) // Person { name: 'Rose' }
+      console.log(person.name) // 'Rose'
+      console.log(person.age) // undefined
+      console.log(person.#age) // Private field '#age' must be declared in an enclosing class
+      console.log(Object.getOwnPropertyDescriptors(person)) // 仅能获取到name相关的描述符信息
+      ```
+- **类的方法**：
+    - 静态方法：
+      ```js
+      class Person {
+        static create(name) {
+          return name
+        }
+      }
+      let person = Person.create('Kathy')
+      console.log(person) // 'Kathy'
+      ```
+- **类的继承**：使用``extends``关键字拓展子类
+    - ``class``的继承和``prototype``的继承的区别：[继承](#继承)
+        - ``class``为**ES6**的**继承**，``prototype``为**ES5**的**原型链继承**
+        - ``class``的子类没有自己的this对象，先创造父类的this对象（所以先调用super），再用子类的构造函数修改this
+        - ``prototype``实质为先创造子类的this对象，再将父类方法通过``Parent.apply(this)``添加到子类上
+        - ``class``内部定义的方法不可枚举，不存在变量提升
+
+---
 ### ``function Person()`` vs ``const person = Person()`` vs ``const person = new Person()``
 - ``function Person()``：定义一个函数，可以当一个常规函数或者构造器(constructor)来使用
 - ``const person = Person()``：调用 ``Person()``作为常规函数，当没有返回值时，因为没有构造函数，所以会导致结果为``undefined``
@@ -139,97 +587,129 @@ Person.call(person3, 'Luke')
   ```
 
 ---
-### 匿名函数
-- 可防止变量污染
-```js
-(function () {
-  var x = 10
-  console.log(x) // 10
-})()
-console.log(typeof x) // undefined
-```
+### 闭包
+- 作用
+    - 封装私有变量：隐藏内部数据，仅通过特定方法暴露操作接口
+       ```js
+       function createCounter () {
+         let count = 0
+         return {
+           increment: () => count++,
+           getCount: () => count,
+         }
+       }
+       const counter = createCounter()
+       counter.increment()
+       console.log(counter.getCount()) // 1
+       console.log(count) // 报错
+       ```
+    - 维持变量在内存中的存在，避免被垃圾回收，如在定时器中保持某个状态
+       ```js
+       function delayedLog(message, delay) {
+         setTimeout(() => {
+           console.log(message) // 闭包保留了message的引用
+         }, delay)
+       }
+       delayedLog('hello', 1000)
+       ```
+    - 函数柯里化：通过分步传递参数， 生成特定功能的函数
+       ```js
+       function multiply(a) {
+         return (b) => a * b // 闭包保留a值
+       }
+       const double = multiply(2)
+       console.log(double(5)) // 10
+       ```
+- 负面作用
+    - [内存泄漏](#Javascript内存泄漏)：变量长期驻留内存，无法被垃圾回收（GC）
+      ```js
+      function createHeavyClosure() {
+        const bigData = new Array(1000000).fill('*')
+        return () => console.log(bigData.length)
+      }
+      let fn = createHeavyClosure() // 即使不再需要，bigData仍被闭包引用，无法释放
+      // 解决：使用后置null
+      fn = null // 解除引用，触发GC
+      ```
+    - 循环中的闭包陷阱：变量共享
+      ```js
+      for (var i = 0; i < 3; i++) {
+        setTimeout(() => {
+          console.log(i) // 输出3, 3, 3
+        }, 100)
+      }
+      // 解决，var改成let隔离作用域
+      for(let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          console.log(i) // 输出0, 1, 2
+        })
+      }
+      ```
+    - 性能损耗：增加内存和运行时间开销
+      ```js
+      function fn() {
+        // 大数据
+      } 
+      const closures = new Array(1000000).fill().map(() => fn())
+      ```
+- 正确使用方式
+    - 明确闭包生命周期，及时移除不再需要的引用
+    - 优先使用块级作用域，使用``let/const``替代``var``，避免变更提升和共享
+    - 避免循环引用，如闭包和DOM元素相互引用会导致内存泄漏
+    - 性能敏感场景慎用：高频触发函数内部避免创建闭包
 
 ---
-###  深拷贝和浅拷贝
-- 浅拷贝：指两个js对象指向同一个内存地址，其中一个改变会影响另一个。浅拷贝只会拷贝一层，深层的引用类型改变还是会受到影响。
-    ```js
-    let oldObj = {1: 'a', 2: 'b'}
-    let oldObj2 = {1: 'c', 3: 'd'}
-    let newObj1 = Object.assign({}, oldObj)
-    let newObj2 = {...oldObj}
-    // merge object
-    let newObj3 = {...oldObj, ...oldObj2} // {1: 'c', 2: 'b', 3: 'd'}
-    // array slice 
-    let arr = [...arr1, ...arr2]
-    ```
-- 深拷贝：指复制后的新对象重新指向一个新的内存地址，两个对象改变互不影响。
-  - JSON实现
-    ```js
-    // JSON实现
-    let oldObj = {1: 'a', 2: 'b'}
-    console.log(JSON.parse(JSON.stringify(oldObj)))
-    ```
-    - 不使用原因：```JSON.stringify```仅可序列化对象**可枚举的自有属性**
-      - 如果对象中有构造函数生成的，使用```JSON.parse(JSON.stringify(Object))```会丢失对象```constructor```
-      - 对象中有时间对象``Date``，则时间会被parse成字符串而非时间对象
-      - 对象中有```RegExp```, ```Error```对象时，序列化的结果只能得到空对象
-      - 对象中有```函数```或```undefined```时则会丢失
-      - 对象中有```NaN```， ```Infinity```和```-Infinity```时，序列化结果变为```null```
-      - 对象中存在循环引用时无法正确深拷贝，会抛出错误
-  - 递归实现
-    ```js
-    const deep_clone = obj => {
-      let ret, k, b;
-      // instanceof 检测构造函数的prototype属性是否出现在某个实例对象原型链上
-      if ((b = obj instanceof Array) || obj instanceof Object) {
-        ret = b ? [] : {};
-        for (k in obj) {
-          if (obj[k] instanceof Array || obj[k] instanceof Object) {
-            ret[k] = deep_clone(obj[k]);
-          } else { 
-            ret[k] = obj[k];
-          }
+### 尾调用
+- 函数最后一步调用另一个函数，并直接返回期执行结果，不作额外计算或操作
+- 尾调用优化（Tail Call Optimization/TCO）：在支持TCO的JS引擎中，尾调用不会增加调用栈的尝试，而是直接复用当前栈桢，提高性能并避免栈溢出
+- ES6的尾调用只在严格模式下开启
+```js
+function tailCall(x) {
+  return fn(x)
+}
+function fn (y) {
+  return y * 2
+}
+console.log(tailCall(3))
+```
+- 应用
+    - 尾递归：递归函数如果满足尾调用条件，可以优化为尾递归，避免调用栈溢出，提高性能
+      ```js
+      // 普通递归
+      function factorial(n) {
+        if (n === 1) return 1
+        return n * factorial(n-1) // 返回时仍需n*操作，导致递归尝试过大时栈溢出
+      }
+      console.log(factorial(5))
+      
+      // 尾递归, 优化需要JS引擎支持，如safari。V8未默认启用TCO，因此大多数情况下递归优化不会生效
+      function factorialTail(n, acc = 1){
+        if (n === 1) return acc
+        return factorialTail(n - 1, n * acc)
+      }
+      ```
+    - 函数式编辑
+      ```js
+      const sum = (arr, total = 0) => {
+        if(arr.length === 0) return total
+        return sum(arr.slice(1), total + arr[0])
+      }
+      console.log(sum([1, 2, 3, 4, 5]))
+      ```
+    - 实现状态机
+      ```js
+      function stateMachine(state) {
+        switch (state) {
+          case 'idle':
+            return stateMachine('running')
+          case 'running':
+            return stateMachine('completed')
+          case 'completed':
+            return 'Done'
         }
       }
-      return ret;
-    };
-    function deepClone(obj, cache = new WeakMap()) {
-      if (obj === null || typeof obj !== 'object') return obj
-      if (cache.has(obj)) return cache.get(obj) // 处理循环引用
-      let clone = Array.isArray(obj) ? [] : {}
-      cache.set(obj, clone)
-      console.log('before', cache)
-      for(let k in obj) {
-        if (obj.hasOwnProperty(k)) {
-          console.log('on clone', k, cache)
-          clone[k] = deepClone(obj[k], cache)
-        }
-      }
-      return clone 
-    }
-    ```
-    不能处理``Date``、``RegExp``、``Set``、``Map``等特殊对象，不能复制``Symbol``、``undefined``、函数等
-  - ``window``对象的``structuredClone()``方法(现代浏览支持/Node.js 16+)：支持``Date``、``RegExp``、``Set``、``Map``等特殊对象，但不支持``Function``和``Symbol``([ref](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/structuredClone))
-  - ``MessageChannel``（仅适用于浏览器）: 
-    - 支持``Date``、``RegExp``、``Set``、``Map``和循环引用
-    - 支持``Function``，但不支持``Symbol``
-    - 适用于异步处理大对象，和WEB应用避免阻塞UI线程s
-    - 依赖``MessageChannel``，无法在node环境中使用
-    ```js
-    function deepCloneWithMessageChannel(obj) {
-      return new Promise((resolve) => {
-        const { port1, port2 } = new MessageChannel()
-        port2.onmessage = event => resolve(event.data)
-        port1.postMessage(obj)
-      })
-    }
-    const obj = { a: 1, b: { c: 2 }, d: new Date() }
-    deepCloneWithMessageChannel(obj).then(copy => {
-      cosole.log(copy) // { a: 1, b: { c: 2 }, d: new Date() }
-    })
-    ```
-  - ``history.state``：仅限浏览器，十分不推荐
-  - 第三方克隆函数，如``lodash``
+      console.log(stateMachine('idle'))
+      ```
 
 ---
 ### 变量声明方法
@@ -258,6 +738,119 @@ console.log(typeof x) // undefined
     c.push(9)
     c.length = 0
     ```
+
+---
+### 变量提升（Variable Hoisting）vs 函数提升（Function Hoisting）
+- 函数提升优先级比变量提升高
+- 发生在编译阶段放入内存时
+```javascript
+var a = 1;
+function fn() {
+  var a = 2;
+  function a() { console.log(3) }
+  return a
+  function a() { console.log(4) }
+}
+var b = fn()
+console.log(b)  // output: 2
+```
+执行过程
+```javascript
+function fn () { // 内部函数
+  var a
+  a = () => { console.log(3) } 
+  a = () => { console.log(4) }
+  a = 2
+  return a
+}
+```
+- ``var``声明的变量为全局变量，且会将该变量添加为全局对象（浏览器为window，Node为global）的属性
+  ```js
+  var addedPro = 1
+  window.addedPro // 1
+  ```
+
+--- 
+###  深拷贝和浅拷贝
+- 浅拷贝：指两个js对象指向同一个内存地址，其中一个改变会影响另一个。浅拷贝只会拷贝一层，深层的引用类型改变还是会受到影响。
+    ```js
+    let oldObj = {1: 'a', 2: 'b'}
+    let oldObj2 = {1: 'c', 3: 'd'}
+    let newObj1 = Object.assign({}, oldObj)
+    let newObj2 = {...oldObj}
+    // merge object
+    let newObj3 = {...oldObj, ...oldObj2} // {1: 'c', 2: 'b', 3: 'd'}
+    // array slice 
+    let arr = [...arr1, ...arr2]
+    ```
+- 深拷贝：指复制后的新对象重新指向一个新的内存地址，两个对象改变互不影响。
+    - JSON实现
+      ```js
+      // JSON实现
+      let oldObj = {1: 'a', 2: 'b'}
+      console.log(JSON.parse(JSON.stringify(oldObj)))
+      ```
+        - 不使用原因：```JSON.stringify```仅可序列化对象**可枚举的自有属性**
+            - 如果对象中有构造函数生成的，使用```JSON.parse(JSON.stringify(Object))```会丢失对象```constructor```
+            - 对象中有时间对象``Date``，则时间会被parse成字符串而非时间对象
+            - 对象中有```RegExp```, ```Error```对象时，序列化的结果只能得到空对象
+            - 对象中有```函数```或```undefined```时则会丢失
+            - 对象中有```NaN```， ```Infinity```和```-Infinity```时，序列化结果变为```null```
+            - 对象中存在循环引用时无法正确深拷贝，会抛出错误
+    - 递归实现
+      ```js
+      const deep_clone = obj => {
+        let ret, k, b;
+        // instanceof 检测构造函数的prototype属性是否出现在某个实例对象原型链上
+        if ((b = obj instanceof Array) || obj instanceof Object) {
+          ret = b ? [] : {};
+          for (k in obj) {
+            if (obj[k] instanceof Array || obj[k] instanceof Object) {
+              ret[k] = deep_clone(obj[k]);
+            } else { 
+              ret[k] = obj[k];
+            }
+          }
+        }
+        return ret;
+      };
+      function deepClone(obj, cache = new WeakMap()) {
+        if (obj === null || typeof obj !== 'object') return obj
+        if (cache.has(obj)) return cache.get(obj) // 处理循环引用
+        let clone = Array.isArray(obj) ? [] : {}
+        cache.set(obj, clone)
+        console.log('before', cache)
+        for(let k in obj) {
+          if (obj.hasOwnProperty(k)) {
+            console.log('on clone', k, cache)
+            clone[k] = deepClone(obj[k], cache)
+          }
+        }
+        return clone 
+      }
+      ```
+      不能处理``Date``、``RegExp``、``Set``、``Map``等特殊对象，不能复制``Symbol``、``undefined``、函数等
+    - ``window``对象的``structuredClone()``方法(现代浏览支持/Node.js 16+)：支持``Date``、``RegExp``、``Set``、``Map``等特殊对象，但不支持``Function``和``Symbol``([ref](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/structuredClone))
+    - ``MessageChannel``（仅适用于浏览器）:
+        - 支持``Date``、``RegExp``、``Set``、``Map``和循环引用
+        - 支持``Function``，但不支持``Symbol``
+        - 适用于异步处理大对象，和WEB应用避免阻塞UI线程s
+        - 依赖``MessageChannel``，无法在node环境中使用
+      ```js
+      function deepCloneWithMessageChannel(obj) {
+        return new Promise((resolve) => {
+          const { port1, port2 } = new MessageChannel()
+          port2.onmessage = event => resolve(event.data)
+          port1.postMessage(obj)
+        })
+      }
+      const obj = { a: 1, b: { c: 2 }, d: new Date() }
+      deepCloneWithMessageChannel(obj).then(copy => {
+        cosole.log(copy) // { a: 1, b: { c: 2 }, d: new Date() }
+      })
+      ```
+    - ``history.state``：仅限浏览器，十分不推荐
+    - 第三方克隆函数，如``lodash``
 
 ---
 ### 切换浏览器导航或最小化窗口时监听 ([ref](https://developer.mozilla.org/zh-CN/docs/Web/API/Page_Visibility_API))
@@ -382,6 +975,58 @@ document.addEventListener("visibilitychange", function(ev) {
     }
     new Foo() instanceof Foo //false
     ```
+
+---
+### ``__proto__`` vs ``prototype``
+函数``prototype`` -- (定义) --> 实例原型对象 <-- (引用)-- 该对象创建的实例的``__proto__``
+- ``__proto__``：
+    - **所有对象**都有的属性
+    - 是实例的属性，用于访问原型链，查找继承的属性和方法
+    - 可能过直接赋值改变对象原型，但不推荐，影响性能
+- ``prototype``：
+    - 仅**函数对象**才有的属性；
+    - 是构造函数的属性，用于定义实例的原型模板
+    - 通过构造函数个性，会影响所有已创建和未来的实例
+```js
+const arr = []
+console.log(arr.__proto__ === Array.prototype) // true
+function Foo() {}
+console.log(Foo.__proto__ === Function.prototype) // true
+  
+function Person () {}
+Person.prototype.sayHello = function () {
+  console.log('Hello')
+}
+console.log(Person.prototype) // 指向原型对象 { sayHello: f }
+const obj = {}
+console.log(obj.prototype) // undefined
+  
+const person = new Person()
+console.log(person.__proto__ === Person.prototype) // true
+
+obj.__proto__ = {foo: 'bar'} // 修改原型链
+console.log(obj.foo) // 'bar'
+
+Person.prototype.age = 30
+const p1 = new Person()
+console.log(p1.age) // 30
+console.log(person.age) // 30
+```
+```mermaid
+graph LR
+    
+A(实例对象 person) --- B[__proto__]
+B --- C[Person.prototype]
+C --- D[__proto__] --- E[Object.prototype] --- F[__proto__] --- G[null]
+C --- H[sayHello]
+A --- I[自身属性]
+
+```
+- 每个对象是否一定有原型并从原型继承属性方法？
+  - 错误。```Object.prototype```没有原型，```Object.prototype.__proto__ === null```
+  - 可使用```Object.getPrototypeOf(Object.prototype)```替换上述方法（``obj.__proto__``）
+- 函数原型链
+  > myFunction --> Function.prototype --> Object.prototype --> null
 
 ---
 ### 模块化
@@ -517,77 +1162,6 @@ document.addEventListener("visibilitychange", function(ev) {
     - ``View`` ⇋ ``Presenter`` ⇋ ``Model`` : 双向, view 不和 Model通信
 3. **MVVM**
     - ``Model`` ⇋ ``View`` ↔︎ ``ViewModel``: Model与View双向通信，view和ViewModel双向绑定
-
----
-### JS对象转换
-1. 对象到字符串
-   - 如对象有``toString()``，则调用该方法
-   - 如无``toString()``或此方法不返回一个原始值，则调用``valueOf()``
-   - 两者都无，此时抛出一个类型错误异常
-2. 对象到数字
-    - 如有``valueOf()``，则调用该方法
-    - 如无``valueOf()``，则调用``toString()``
-    - 两者都无，此时抛出一个类型错误异常
-
----
-### 操作符的隐式转换
-- ``+``两边至少有一个``String``变量时，两边会隐匿转换为字符串；其他情况则两边会转换为数字
-  ```js
-  1 + '23' // '123'
-  1 + false // 1
-  '1' + false // '1false'
-  false + true // 1
-  1 + Symbol() // uncaught typeerror
-  undefined + undefined = NaN
-  ```
-- 非加法运算符，只要有一边为数字，则另一边就会被转为数字
-- ``==``两边值都转为``Number``类型
-  ```js
-  3 == true // => 3 == 1 => false
-  '0' == false // 0 == 0 => true
-  ```
-    - ``==`` vs ``===``
-        - ``==``强制类型转换， ``===``不强制
-        - ``===``同时比较值和类型，``==``不是
-      ```js
-      null == undefined // true
-      [] == false // true
-      1 == [1] // true
-      0 == ''// true
-      0 == '0' // true
-      '' == '0' // false
-      ```
-- ``<``,``>``字符串按字母表顺序比较，其他情况转为数字再比较
-  ```js
-  'a' < 'b' // true
-  '12' < 13 // true
-  false > -1 // true
-  ```
-- 对象会被``ToPrimitive``转换为基本类型再转换
-  ```js
-  let a = {}
-  a > 2 // false
-  // 以下为执行过程
-  a.valueOf() // ToPrimitive默认type为number，因此先valueOf
-  a.toString() // '[object Object]'
-  Number(a.toString()) // NaN
-  NaN > 2 // false
-  ```
-  例2:
-  ```js
-  let a = {name: 'Jack'}
-  let b = {age: 18}
-  a + b // '[object Object][object Object]'
-  ```
-
----
-### 展开运算符``...``
-- 字符串转单字数组
-  ```js
-  let str = 'mysksksks'
-  str.split('') // ['m', 'y', 's', 'k', 's', 'k', 's', 'k', 's']
-  [...str] // ['m', 'y', 's', 'k', 's', 'k', 's', 'k', 's']
-  ```
 
 ---
 ### 为什么使用``setTimeout``模拟实现``setInterval``
@@ -745,131 +1319,10 @@ console.log([...set_a]) // [5, "5"]
     - 高频提交
 
 ---
-### 数据存储类型
-- 持久化存储：只有用户选择清理才会被清理
-- 临时存储：当最近一次使用时Storage limits达到限制时会被自动清理（LRU Policy）
-    - LRU Policy: 磁盘空间满时，配额管理器按最近最少使用的源开始清理，直到浏览器不再超过限制
-
----
-### 闭包
-- 作用
-  - 封装私有变量：隐藏内部数据，仅通过特定方法暴露操作接口
-     ```js
-     function createCounter () {
-       let count = 0
-       return {
-         increment: () => count++,
-         getCount: () => count,
-       }
-     }
-     const counter = createCounter()
-     counter.increment()
-     console.log(counter.getCount()) // 1
-     console.log(count) // 报错
-     ```
-  - 维持变量在内存中的存在，避免被垃圾回收，如在定时器中保持某个状态
-     ```js
-     function delayedLog(message, delay) {
-       setTimeout(() => {
-         console.log(message) // 闭包保留了message的引用
-       }, delay)
-     }
-     delayedLog('hello', 1000)
-     ```
-  - 函数柯里化：通过分步传递参数， 生成特定功能的函数
-     ```js
-     function multiply(a) {
-       return (b) => a * b // 闭包保留a值
-     }
-     const double = multiply(2)
-     console.log(double(5)) // 10
-     ```
-- 负面作用
-  - [内存泄漏](#Javascript内存泄漏)：变量长期驻留内存，无法被垃圾回收（GC）
-    ```js
-    function createHeavyClosure() {
-      const bigData = new Array(1000000).fill('*')
-      return () => console.log(bigData.length)
-    }
-    let fn = createHeavyClosure() // 即使不再需要，bigData仍被闭包引用，无法释放
-    // 解决：使用后置null
-    fn = null // 解除引用，触发GC
-    ```
-  - 循环中的闭包陷阱：变量共享
-    ```js
-    for (var i = 0; i < 3; i++) {
-      setTimeout(() => {
-        console.log(i) // 输出3, 3, 3
-      }, 100)
-    }
-    // 解决，var改成let隔离作用域
-    for(let i = 0; i < 3; i++) {
-      setTimeout(() => {
-        console.log(i) // 输出0, 1, 2
-      })
-    }
-    ```
-  - 性能损耗：增加内存和运行时间开销
-    ```js
-    function fn() {
-      // 大数据
-    } 
-    const closures = new Array(1000000).fill().map(() => fn())
-    ```
-- 正确使用方式
-  - 明确闭包生命周期，及时移除不再需要的引用
-  - 优先使用块级作用域，使用``let/const``替代``var``，避免变更提升和共享
-  - 避免循环引用，如闭包和DOM元素相互引用会导致内存泄漏
-  - 性能敏感场景慎用：高频触发函数内部避免创建闭包
-
----
-### 内存管理
-- JS在创建变量时自动分配了内存，并且在不使用的时候自动释放（垃圾回收）
-- 垃圾回收机制（GC）：
-    - 计数垃圾收集
-        - 如果没有引用指向该对向，对象被垃圾回收机制回收
-        - 无法处理循环引用，内存生生泄漏
-    - 标记清除算法
-        - 从根开始找到所有引用的对象（可获得对象）
-
----
-### 栈，堆
-1. 基本类型（Boolean, undefined等）赋值是```值赋值（栈空间）```; 引用类型（Object）赋值是```地址赋值（堆空间）```
-   ```js
-   //值赋值
-   var a = 1
-   var b = a
-   a = 2
-   console.log(b) //1
-   //地址赋值
-   var a1 = {name: "x"}
-   var b1 = a1
-   a1.name = "y"
-   console.log(b1) // {name: "y"}
-   ```
-2. 垃圾回收
-    - 回收栈空间：通过向下移动ESP指针来销毁存放在栈空间的执行上下文
-        1. JS执行代码时，主线程上存在ESP（Extended stack pointer）指针，指向调用栈中当前正在执行的上下文（假设为<code>foo()</code>）。
-        2. <code>foo()</code>执行完成后，ESP向下指向，此时需要销毁<code>foo()</code>
-        3. 有新的执行上下文进来的时候，可以直接覆盖<code>foo()</code>这块内存空间
-    - 回收堆空间：
-        1. 标记空间中的活动对象和非活动对象
-        2. 回收非活动对象所占用的内存
-        3. 内存整理：进行频繁的回收时可能存在大量不连续的碎片，需要分配一个占用较大连续内存空间的对象时，可能存在内存不足的现象
-    - 副垃圾回收器（小对象）：把空间对半分成两个区域，一半是对象区域，一半空闲区域，新加入的对象都进入对象区，满的时候
-        1. 对区域内对象标记（活动/非活动）
-        2. 将对象区的活动对象复制到空闲区域并有序排列，复制完后，对象区和空闲区翻转。因此新的空闲区是没有碎片的，所以不需要内存整理
-    - 主垃圾回收器（大对象）
-        1. 遍历调用栈，看对象是否被引用，引用的为活动对象，没被引用的为垃圾数据
-        2. 清理垃圾数据
-        3. 内存整理
-3. v8会自动执行垃圾回收，由于js也运行在主线程上，垃圾回收会打断JS运行，可能会造成页面卡顿，所以v8把垃圾回收拆成小任务，穿插在js中执行
-
----
 ### 事件循环：宏任务和微任务
 - 宏任务：
   - 常见定时器```setTimeout```, ```setInterval```, ```setImmediate```
-  - 用户交互事件```I/O```, [requestAnimationFrame](#requestAnimationFrame)
+  - 用户交互事件```I/O```, [requestAnimationFrame](#windowrequestAnimationFrame)
   - 整体代码```script```
 - 微任务：
   - 原生Promise相关: ``Promise.then``, ``Promise.catch``, ``Promise.finally``
@@ -932,6 +1385,93 @@ console.log([...set_a]) // [5, "5"]
   - 高响应的用户体验，高效I/O操作：用户交互事件作为**高优先级宏任务**插入队列
 
 ---
+### ``Promise``
+- ``Promise``及其状态
+    - 表示一个**异步操作**的最终完成 (或失败)及其结果值
+    - 状态：
+        - ``pending``: 初始状态
+        - ``fulfilled``：操作成功完成
+        - ``reject``：操作失败
+    - ``fulfilled`` + ``reject`` = ``settled``
+    - ``Promise.resolve(fulfilled)``静态方法
+- Promise中断：Promise本质上是无法被终止的
+    - 通过``Promise.race()``使其中一个promise reject的情况，无视另外的promise的结果去达到中断的目的
+      ```typescript
+        interface CancellablePromiseFactory<T = unknown> extends Promise<T> {
+          abort?: (reasonToAbort: any) => void 
+        }
+        function cancellablePromiseFactory (executor) {
+          let abort //中断方法
+          const originPromise = new Promise(executor) //原始promise实例
+          const promiseToAbort = new Promise(
+            (_, reject) => (abort = reasonToAbort => reject(reasonToAbort)) // reject的值给abort
+          )
+          const cancellablePromise: CancellablePromiseFactory = Promise.race([
+            originPromise,
+            promiseToAbort
+          ])
+          cancellablePromise.abort = abort //将abort挂载到cancellablePromise上
+          return cancellablePromise
+        }
+        const cancellablePromise = cancellablePromiseFactory((resolve, reject) => {
+          setTimeout(() => {
+            console.log("after 10s")
+            resolve("resolve after 10s")
+          }, 10000)
+          setTimeout(() => {
+            console.log("after 11s")
+            reject("reject after 11s")
+          }, 11000)
+        })
+        cancellablePromise.then(console.log).catch(console.log).finally(() => {
+          console.log("finally")
+        })
+        setTimeout(() => {
+          cancellablePromise.abort("abort after 2s")
+        }, 20000)
+        //结果
+        //abort after 2s
+        //finally
+        //after 10s
+    
+      ```
+        ```js
+        function abortWrapper(p1) {
+          let abort
+          let p2 = new Promise((resolve, reject) => (abort = reject))
+          let p = Promise.race([p1, p2])
+          p.abort = abort 
+          return p
+        }
+        const req = abortWrapper(request)
+        req.the(res => console.log(res)).catch(e => console.log(e))
+        setTimeout(() => req.abort('用户手动终止请求'), 2000)
+      ```
+    - 中断调用链：在``then/catch``的最后一行返回一个永远``pending``的``promise``
+- 实现``Promise.all()``
+  ```js
+  Promise.myAll = promises => {
+    return new Promise ((resolve, reject) => {
+      let count = 0 //计数器
+      let result = [] //结果存放
+      const len = promises.length
+      if (len === 0) {
+        return resolve([])
+      }
+      promises.forEach((p, i) => { //可能有非promise的项，需转化一下
+        Promise.resolve(p).then(res => {
+          count += 1
+          result[i] = res 
+          if (count === len) {
+            resolve(result)
+          }
+        }).catch(reject)
+      })
+    })
+  }
+  ```
+
+---
 ### ``async/await``
 - 本质是``generator``的语法糖，基于``Promise``实现：通过``function*``（[生成器函数](#生成器函数function和生成器对象Generator)）定义，使用``yield``暂停执行，并可通过``.next()``恢复
 - ``async``: 本质是返回``Promise``的生成器函数
@@ -966,280 +1506,7 @@ console.log([...set_a]) // [5, "5"]
   ```
 
 ---
-### JS创建对象的几种方法
-- 直接构成使用
-```js
-let o = {
-  a: 1,
-  b2
-}
-```
-- ``Object()``构造器
-```js
-const o = new Object()
-o.a = 1
-```
-- 原型链方式：以现有对象作为原型生成新对象
-```js
-const obj = {a:  1}
-const o1 = Object.create(obj)
-
-const objPrototype = {
-  show () {
-    console.log(`a is ${this.a}`)
-  }
-}
-const o2 = Object.create(objPrototype)
-o2.a = 1
-o2.show() // a is 1
-```
-- ES6 Class
-```js
-class Person {
-  constructor(name, age){
-    this.name = name
-    this.age = age
-  }
-  greet = function () {
-    console.log(`My name is ${this.name} and I'm ${this.age}`)
-  }
-}
-const person = new Person('Luke', 15)
-person.greet() // My name is Luke and 15
-```
-- 构造函数
-```js
-function Person (name, age){
-  this.name = name
-  this.age = age
-  this.greet = function () {
-    console.log(`My name is ${this.name} and I'm ${this.age}`)
-  }
-}
-const person = new Person('Luke', 15)
-person.greet() // My name is Luke and 15
-```
-
----
-### 函数调用方式
-- 一般形式的函数调用: 在浏览器中，this表示全局对象，即window，如在严格模式下，this为undefined
-  ```js
-  function foo () {
-    console.log(this)
-  }
-  foo() //non-strict: window; strict: undefined
-  ```
-- 作为对象的方法调用: 方法一定要要宿主对象引导调用，即**对象.方法（参数）**。``this``表示引导方法的对象（宿主对象）
-  ```js
-  function foo () {
-    console.log(this)
-  }
-  let o = {name: 'banana'}
-  o.fn = foo
-  o.fn() // {name: 'banana', fn: f}
-  const fnStandalone = o.fn // this丢失上下文，不再提向o
-  fnStandalone() // non-strict: window. strict: undefined
-  ```
-  ```js
-  var length = 10
-  function fn () {
-    console.log(this.length)
-  }
-  var obj = {
-    length: 5,
-    method: function(fn) {
-      fn()
-      arguments[0]() //this指向arguments, 即调用this.length时指的是arguments的长度
-    }
-  }
-  obj.method(fn, 1)// 输出 10, 2
-  obj.method(fn, 1, 2, 3) //输出 10, 4
-  ```
-- ``call``&``apply``(上下文调用模式): ``call``(每一个参数都是独立的)，``apply``(参数对象数组)
-  ```js
-  function foo (num1, num2) {
-    return num1 + num2
-  }
-  let o = { name: "Lee" }
-  foo.apply(null, [123, 567]) //以window为上下文执行apply
-  foo.apply(o, [123, 567]) //以o为上下文执行apply
-  foo.call(null, 123, 456)
-  foo.call(null, ...[123, 456]) // ES6
-  ```
-- ``bind``：使用明确的``this``值生成一个新函数
-  ```js
-  function showThis () {
-    console.log(this)
-  }
-  const obj = {name: 'Banana'}
-  const boundFunc = showThis.bind(obj)
-  boundFunc() // {name: 'Banana'}
-  ```
-- new间接调用（构造器模式）：``this``指函数本身
-  ``` js
-  var Person = function() {
-    this.name = "码农"
-    this.sayHello = function() {
-      console.log("hello")
-    }
-  }
-  var p = new Person() 
-  p.sayHello() // 输出hello
-  ```
-  - 执行过程：
-    1. 定义函数Person时，不执行函数体，所以javascript解释器不知道函数的内容
-    2. 接下来执行``new``关键字，创建对象，解释器开辟内存，得对对象的引用，新对象引用交给函数
-    3. 执行函数体，将传来的对象交给``this``, 即在构造方法中，``this``是对``new``创建出来的对象
-    4. 为``this``添加成员
-    5. 函数结束，返回``this``，将``this``交给左边的变量
-  - 所有需要由对象使的属性，必须用``this``引导
-    ```js
-    function Foo () {
-      getName = function() {
-        console.log(1)
-      }
-      return this
-    }
-    Foo.getName = function() {
-      console.log(2)
-    }
-    Foo.prototype.getName = function() {
-      console.log(3)
-    }
-    var getName = function () {
-      console.log(4)
-    }
-    function getName () {
-      console.log(5)
-    }
-    Foo.getName() //输出 2
-    getName() //输出 4
-    Foo().getName // 输出 1，执行Foo()时覆写全局getName, 再返回this, this指向window, 所以window.getName此时已变成console.log(1)
-     getName() //输出 1
-    new Foo.getName() //输出 2 , 以Foo.getName为构造函数实例化对象
-    new Foo().getName() //输出 3， 实例new Foo()自身上没有getName，从原型Foo.prototype上找
-    new new Foo().getName() // 输出3， 等于new (new foo().getName)() , 依旧是从原型上找
-    ```
-    - 构造器中的return意义变化：如果return对对象，则保留原意，如果return非对象或没有return语句，就返回this
-    ```js
-    var foo1 = function () {
-      this.name = "张三"
-      return { name: "李四" }
-    }
-    var foo2 = function () {
-      this.name = "张三"
-      return "李四"
-    }
-    var p1 = new foo1()
-    var p2 = new foo2()
-    console.log(p1.name) //李四
-    console.log(p2.name) //张三
-    ```
-- class
-  ```js
-  class Person {
-    constructor(name) {
-      this.name = name
-    }
-    showThis() {
-      console.log(this)
-    }
-  }
-  const person = new Person('Banana')
-  person.showThis() // Person {name: Banana}
-  const showThisStandalone = person.showThis
-  showThisStandalone() // undefined, 因为类仅在严格模式下执行
-  ```
-
----
-### ``Promise``
-- ``Promise``及其状态
-  - 表示一个**异步操作**的最终完成 (或失败)及其结果值
-  - 状态：
-    - ``pending``: 初始状态
-    - ``fulfilled``：操作成功完成
-    - ``reject``：操作失败
-  - ``fulfilled`` + ``reject`` = ``settled``
-  - ``Promise.resolve(fulfilled)``静态方法
-- Promise中断：Promise本质上是无法被终止的
-  - 通过``Promise.race()``使其中一个promise reject的情况，无视另外的promise的结果去达到中断的目的
-    ```typescript
-      interface CancellablePromiseFactory<T = unknown> extends Promise<T> {
-        abort?: (reasonToAbort: any) => void 
-      }
-      function cancellablePromiseFactory (executor) {
-        let abort //中断方法
-        const originPromise = new Promise(executor) //原始promise实例
-        const promiseToAbort = new Promise(
-          (_, reject) => (abort = reasonToAbort => reject(reasonToAbort)) // reject的值给abort
-        )
-        const cancellablePromise: CancellablePromiseFactory = Promise.race([
-          originPromise,
-          promiseToAbort
-        ])
-        cancellablePromise.abort = abort //将abort挂载到cancellablePromise上
-        return cancellablePromise
-      }
-      const cancellablePromise = cancellablePromiseFactory((resolve, reject) => {
-        setTimeout(() => {
-          console.log("after 10s")
-          resolve("resolve after 10s")
-        }, 10000)
-        setTimeout(() => {
-          console.log("after 11s")
-          reject("reject after 11s")
-        }, 11000)
-      })
-      cancellablePromise.then(console.log).catch(console.log).finally(() => {
-        console.log("finally")
-      })
-      setTimeout(() => {
-        cancellablePromise.abort("abort after 2s")
-      }, 20000)
-      //结果
-      //abort after 2s
-      //finally
-      //after 10s
-  
-    ```
-      ```js
-      function abortWrapper(p1) {
-        let abort
-        let p2 = new Promise((resolve, reject) => (abort = reject))
-        let p = Promise.race([p1, p2])
-        p.abort = abort 
-        return p
-      }
-      const req = abortWrapper(request)
-      req.the(res => console.log(res)).catch(e => console.log(e))
-      setTimeout(() => req.abort('用户手动终止请求'), 2000)
-    ```
-  - 中断调用链：在``then/catch``的最后一行返回一个永远``pending``的``promise``
-- 实现``Promise.all()``
-  ```js
-  Promise.myAll = promises => {
-    return new Promise ((resolve, reject) => {
-      let count = 0 //计数器
-      let result = [] //结果存放
-      const len = promises.length
-      if (len === 0) {
-        return resolve([])
-      }
-      promises.forEach((p, i) => { //可能有非promise的项，需转化一下
-        Promise.resolve(p).then(res => {
-          count += 1
-          result[i] = res 
-          if (count === len) {
-            resolve(result)
-          }
-        }).catch(reject)
-      })
-    })
-  }
-  ```
-
----
-### <span id="requestAnimationFrame">window.requestAnimationFrame使用</span>
+### ``window.requestAnimationFrame``
 - 最平滑的动画最佳循环间隔为**1000ms/显示器刷新频率**(例：60Hz)
 - 回调函数在下一次``重绘``前由更新动画帧调用
 - 会将每一帧中的所有DOM操作集中起来，在一次重绘或回流中就完成（**隐藏或不可见元素除外**），时间间隔紧跟浏览器刷新频率
@@ -1282,147 +1549,14 @@ person.greet() // My name is Luke and 15
   ```
 
 ---
-### Javascript内存泄漏
-应用不再需要的内存未得到释放
-1. 全局变量造成
-   ```js
-      function foo () {
-        a = "this is gloabl variable" //未声明
-        window.b = "global" //设置为全局变量window的属性
-        this.c = "global" //挂载到全局变量属性上
-      }
-   ```
-    - 使用严格模式避免意外创建全局变量，减少使用全局变量
-    - 使用全局变量时确保在处理完数据放置null或重新分配
-2. 未清理的定时器（``setInterval``），未移除的事件监听器（``addEventListener``）
-3. 多处引用：多个变量引用同一个对象，或对table中的某个Cell引用也将导致table保存在内存中
-   ```js
-   let elements = {
-     button: document.getElementById("button")
-   }
-   function doStuff () {
-     button.click()
-   }
-   function removeButton () {
-     document.body.removeChild(document.getElementById("button"))
-   }
-   //#button被两个变量引用，一个是elements，一个在DOM树中，回收时需要将两个引用都释放
-   //removeButton仅仅释放了DOM中的button引用，elements仍保持引用，所以button不会被垃圾回收
-   ```
-4. [闭包](#闭包)：即使作用域已经结束，仍访问定义在作用域内的变量，所以具有记忆周围环境(context)的功能
-   ```js
-   let newElem
-   function outer () {
-     let someText = new Array(1000000)
-     let elem = newElem 
-     function inner () { //闭包inner
-       if (elem) return someText
-     }
-     return function () {} //闭包匿名函数，被返回并赋值给newElem
-     //相同父作域的闭包能共享context， 所以someText和elem被inner()和匿名函数共享
-   }
-   setInterval(function() {
-     newElem = outer() //只要newElem还引用匿名函数，则someText和elem就不会被垃圾回收
-   }, 10)
-   //outer()执行了elem = newElem, newElem会引用上一次调用的匿名函数，即第n次调用outer()会保持第n-1次调用的匿名函数
-   //解决: 计时器中的函数改为 newElem = outer()()
-   ```
-5. ``console.log()``: 打印这部份对象的内存不会被回收
-
----
 ### ``window.onload`` vs ``DOMContentLoaded``
 - ``window.onload``: 文档中所有对象在DOM中，图片，脚本，链接及子框架都完成装载
 - ``DOMContentLoaded``：初始HTML文件被完全加载和解析完成后触发，不需等待样式图像等完全加载
 
 ---
-### 函数原型链
-> myFunction --> Function.prototype --> Object.prototype --> null
-
----
-### Array.indexOf vs Array.includes
+### ``Array.indexOf`` vs ``Array.includes``
 - 返回值：indexOf --> 索引， includes --> boolean
 - NaN: ```[1, 2, NaN, 3, 4, NaN]```, ```indexOf```总是返回```-1```， ```includes```可正确判断```NaN```
-
---- 
-### 变量提升（Variable Hoisting）vs 函数提升（Function Hoisting）
-- 函数提升优先级比变量提升高
-- 发生在编译阶段放入内存时
-```javascript
-var a = 1;
-function fn() {
-  var a = 2;
-  function a() { console.log(3) }
-  return a
-  function a() { console.log(4) }
-}
-var b = fn()
-console.log(b)  // output: 2
-```
-执行过程
-```javascript
-function fn () { // 内部函数
-  var a
-  a = () => { console.log(3) } 
-  a = () => { console.log(4) }
-  a = 2
-  return a
-}
-```
-- ``var``声明的变量为全局变量，且会将该变量添加为全局对象（浏览器为window，Node为global）的属性
-  ```js
-  var addedPro = 1
-  window.addedPro // 1
-  ```
-  
---- 
-### ``__proto__`` vs ``prototype``
-函数``prototype`` -- (定义) --> 实例原型对象 <-- (引用)-- 该对象创建的实例的``__proto__``
-- ``__proto__``：
-  - **所有对象**都有的属性
-  - 是实例的属性，用于访问原型链，查找继承的属性和方法
-  - 可能过直接赋值改变对象原型，但不推荐，影响性能
-- ``prototype``：
-  - 仅**函数对象**才有的属性；
-  - 是构造函数的属性，用于定义实例的原型模板
-  - 通过构造函数个性，会影响所有已创建和未来的实例
-```js
-const arr = []
-console.log(arr.__proto__ === Array.prototype) // true
-function Foo() {}
-console.log(Foo.__proto__ === Function.prototype) // true
-  
-function Person () {}
-Person.prototype.sayHello = function () {
-  console.log('Hello')
-}
-console.log(Person.prototype) // 指向原型对象 { sayHello: f }
-const obj = {}
-console.log(obj.prototype) // undefined
-  
-const person = new Person()
-console.log(person.__proto__ === Person.prototype) // true
-
-obj.__proto__ = {foo: 'bar'} // 修改原型链
-console.log(obj.foo) // 'bar'
-
-Person.prototype.age = 30
-const p1 = new Person()
-console.log(p1.age) // 30
-console.log(person.age) // 30
-```
-```mermaid
-graph LR
-    
-A(实例对象 person) --- B[__proto__]
-B --- C[Person.prototype]
-C --- D[__proto__] --- E[Object.prototype] --- F[__proto__] --- G[null]
-C --- H[sayHello]
-A --- I[自身属性]
-
-```
-- 每个对象是否一定有原型并从原型继承属性方法？
-  - 错误。```Object.prototype```没有原型，```Object.prototype.__proto__ === null```
-  - 可使用```Object.getPrototypeOf(Object.prototype)```替换上述方法（``obj.__proto__``）
 
 ---
 ### delete
@@ -1467,59 +1601,6 @@ if ( typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.reques
 - 检测浏览器是否支持worker：``typeof Worker !== undefined``
 
 ---
-### 尾调用
-- 函数最后一步调用另一个函数，并直接返回期执行结果，不作额外计算或操作
-- 尾调用优化（Tail Call Optimization/TCO）：在支持TCO的JS引擎中，尾调用不会增加调用栈的尝试，而是直接复用当前栈桢，提高性能并避免栈溢出
-- ES6的尾调用只在严格模式下开启
-```js
-function tailCall(x) {
-  return fn(x)
-}
-function fn (y) {
-  return y * 2
-}
-console.log(tailCall(3))
-```
-- 应用
-  - 尾递归：递归函数如果满足尾调用条件，可以优化为尾递归，避免调用栈溢出，提高性能
-    ```js
-    // 普通递归
-    function factorial(n) {
-      if (n === 1) return 1
-      return n * factorial(n-1) // 返回时仍需n*操作，导致递归尝试过大时栈溢出
-    }
-    console.log(factorial(5))
-    
-    // 尾递归, 优化需要JS引擎支持，如safari。V8未默认启用TCO，因此大多数情况下递归优化不会生效
-    function factorialTail(n, acc = 1){
-      if (n === 1) return acc
-      return factorialTail(n - 1, n * acc)
-    }
-    ```
-  - 函数式编辑
-    ```js
-    const sum = (arr, total = 0) => {
-      if(arr.length === 0) return total
-      return sum(arr.slice(1), total + arr[0])
-    }
-    console.log(sum([1, 2, 3, 4, 5]))
-    ```
-  - 实现状态机
-    ```js
-    function stateMachine(state) {
-      switch (state) {
-        case 'idle':
-          return stateMachine('running')
-        case 'running':
-          return stateMachine('completed')
-        case 'completed':
-          return 'Done'
-      }
-    }
-    console.log(stateMachine('idle'))
-    ```
-
----
 ### ``for...of(ES6)`` vs ``for...in``
 - ``for...of``遍历键值；``for...in``遍历键值
 - ``for...in``遍历整个原型链，性能差；``for...of``只遍历当前对象
@@ -1556,23 +1637,6 @@ console.log(tailCall(3))
   - 分离读写：避免交替进行样式修改和布局查询
 
 ---
-### LRU（Least Recently Used）缓存策略
-
----
-### 打包优化
-- ``babel-runtime``：用于优化``Babel``转译后的代码，减少代码冗余。原理是将一些常见的``Babel``转译辅助代码提取到外部模块，而不是在每个文件中重复生成。
-  - 帮助处理``Polyfill``：``babel-runtime``提供了一个共享的库来存放一些polyfill（如兼容新特性Promise、Map等功能至老浏览器的代码），以便不同文件间共享
-  - 帮助处理辅助函数：``Babel``转译中生成的一些辅助函数（``_extends``、``_objectspread``等），将这些函数从模块中提取出来集中到一个地方，避免重复代码增加体积
-  - ``regenerator-runtime``支持：如果使用了``async/await``等生成器函数，``babel-runtime``还会自动提供支持``regenerator-runtime``，减少重复包含该库的情况
-  ```json
-  {
-    "plugin": [
-      "@babel/plugin-transform-runtime"
-    ]
-  }
-  ```  
-
----
 ### ``forEach``循环中止方法
 使用``try...catch``抛出异常
 ```js
@@ -1586,103 +1650,6 @@ try {
   if (e.message !== 'Break') throw e
 }
 ```
-
----
-### ES6 Class 详解 （pending: 需和其他地方整合）
-- **类的构造函数（``constructor``）**: 每个类都可以有一个且只能有一个自己的构造函数。当通过``new``调用一个类时，这个类就会调用自己的``consturctor``，可在创建对象时给类传递参数，执行过程如下
-  1. 在内存中开辟一块新的空间用于创建新对象
-  2. 在这个对象内部的``__proto__``属性会赋值为该类的``prototype``属性
-  3. 构造函数内的``this``，指向创建出来的新对象
-  4. 执行构造函数内部代码
-  5. 如果函数无返回对象，则返回``this``
-  ```js
-  class Person {
-    constructor (name) {
-      this.name = name
-    }
-  }
-  let person = new Person('Mark')
-  console.log(person) // Person { name: 'Mark' }
-  // 类本身指向构造函数
-  console.log(Person === Person.prototype.constructor) // true
-  ```
-  在类上的所有方法都会放在``prototype``属性上
-- **类的属性**: 实例的属性定须定义在类的方法里，如上例在构造函数中定义``name``属性
-  - 静态属性：当把一个属性赋值给类本身而非``prototype``时。可直接通过类来访问，无需实例中访问
-    ```js
-    class Person {
-      static name = 'Luke'
-    }
-    console.log(Person.name)
-    ```
-  - 私有属性：只能在类中读写，不能通过外部引用
-    ```js
-    class Person {
-      #age;
-      constructor(name, age) {
-        this.name = name
-        this.#age = age
-      }
-    }
-    let person = new Person('Rose', 20)
-    console.log(person) // Person { name: 'Rose' }
-    console.log(person.name) // 'Rose'
-    console.log(person.age) // undefined
-    console.log(person.#age) // Private field '#age' must be declared in an enclosing class
-    console.log(Object.getOwnPropertyDescriptors(person)) // 仅能获取到name相关的描述符信息
-    ```
-- **类的方法**：
-  - 静态方法：
-    ```js
-    class Person {
-      static create(name) {
-        return name
-      }
-    }
-    let person = Person.create('Kathy')
-    console.log(person) // 'Kathy'
-    ```
-- **类的继承**：使用``extends``关键字拓展子类
-  - ``class``的继承和``prototype``的继承的区别：[继承](#继承)
-    - ``class``为**ES6**的**继承**，``prototype``为**ES5**的**原型链继承**
-    - ``class``的子类没有自己的this对象，先创造父类的this对象（所以先调用super），再用子类的构造函数修改this
-    - ``prototype``实质为先创造子类的this对象，再将父类方法通过``Parent.apply(this)``添加到子类上
-    - ``class``内部定义的方法不可枚举，不存在变量提升
-
----
-### 生成器函数``function*``和生成器对象``Generator``
-- 使用``function*``关键字声明一个生成器函数
-- 生成器函数内部可以通过``yield``暂停
-- 调用生成器函数会返回一个生成器对象， 即``Generator``实例
-- 生成器对象遵守迭代器协议（Iterator Protocol），支持``for...of``遍历，可通过``.next()``逐步执行（或``.return()``、``.throw``控制执行），保存函数的执行上下文（暂停/恢复状态）
-- 工作流程：
-  ```js
-  // 1.定义生成器函数
-  function* counter() {
-    let count = 0
-    while(true) {
-      yield count++
-    }
-  }
-  // 2.创建生成器对象
-  const gen = counter()
-  // 3.逐步执行
-  console.log(gen.next().value) // 0
-  console.log(gen.next().value) // 1
-  console.log(gen.next().value) // 2
-  ```
-- 应用场景：
-  - 惰性求值：按需生成数据，如无限序列等
-  - 异步控制：与``Promise``结合，实现类似``async/await``效果
-  - 状态机：管理复杂的状态流转逻辑
-  - 自定义迭代：为对象实现可迭代接口
-- 与普通函数区别:
-
-  |       | ``function*``     | ``function``  | 
-  |-------|-------------------|---------------|
-  | 执行方式  | 可暂停/恢复（``yield``） | 一次性执行到底       |
-  | 返回值类型 | 返回``Generator``   | 返回``return``值 | 
-  | 内容占用  | 保留执行上下文（利于大数据处理）  | 执行上下文后销毁      | 
 
 ---
 ### 怎么将变量定义到``window``上
@@ -1703,8 +1670,4 @@ window.fn;
   - 模块化失效：破坏封闭性
 
 ---
-### JS检测内存
-- 浏览器：使用```performance.memory```API，需在Chrome中通过``chrome://flags/#enable-precise-memory-info``启用标志，或启动时添加``--enable-precise-memory-info``参数
-- Node.js环境：使用``process.memoryUsage()``，或者启动Node.js时添加``--inspect``参数
-- 第三方工具：``clinic.js``、``heapdump``等
 
