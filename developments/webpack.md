@@ -204,6 +204,15 @@ module.exports = {
 - babel转译：解析parse → 转换transfer(babel-traverse) → 生成generate (babel-generator)
 
 ---
+### Tree Shaking
+- Webpack在打包时移除无用代码的优化技术，基本ES Module的静态分析，只保留被实际使用的代码，从而减小打包体积
+- 仅支持ESM的引入方式，不支持CommonJS
+- 生产环境下，默认开启Tree Shaking
+- 不能直接对CSS进行Tree Shaking，因为CSS（声明式）本身不具有模块的``import/export``引用关系，可借助plugin去除未使用的CSS
+  - ``purgecss-webpack-plugin``
+  - TailwindCSS自带Tree Shaking机制（``tailwind.config.js``）
+  - 使用vue + vite的话可以用``vite-plugin-purgecss``
+
 ---
 ### 打包优化
 - ``babel-runtime``：用于优化``Babel``转译后的代码，减少代码冗余。原理是将一些常见的``Babel``转译辅助代码提取到外部模块，而不是在每个文件中重复生成。

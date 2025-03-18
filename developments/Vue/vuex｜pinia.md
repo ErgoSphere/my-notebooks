@@ -10,3 +10,14 @@
 ---
 ### vuex实现方式
 - 通过``Vue.mixin``在``beforeCreated``的时候注入``$store``对象
+
+---
+### Vuex和Pinia的区别
+| 对比项   | Vuex                        | Pinia             | 
+|-------|-----------------------------|-------------------|
+| 写法    | Mutation + Action           | 不强制Mutation       | 
+| API风格 | Options API                 | Composition API   | 
+| TS支持  | 需要手动定义                      | 默认支持              | 
+| 模块化   | 需``namespaced``             | 直接``defineStore`` | 
+| 持久化   | 额外需要``vuex-persistedstate`` | 不强制Mutation       | 
+| 性能    | Mutation有额外开销               | 更轻量，更快            | 

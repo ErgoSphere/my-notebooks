@@ -1670,4 +1670,13 @@ window.fn;
   - 模块化失效：破坏封闭性
 
 ---
+### 实现渲染大量数据不卡顿
+- [requestAnimationFrame](#windowrequestAnimationFrame)：推荐
+- 虚拟列表（Virtual List）：上万行数据可结合``Web Worker``使用
+  1. 计算可视区域的行数（``containerHeight/rowHeight``）
+  2. 只渲染可视区域内的数据，滚动时动态更新可见行
+  3. 利用``translateY``让数据看起来完整
+- 分批渲染（Lazy Load）: 避免一次性渲染所有数据，通过``requestIdleCallback``或者``setTimeout``分批加载
+- ``Web Worker``：在子线程处理数据，避免阻塞主线程
+- 使用``Canvas``绘制表格：不直接操作DOM，避免渲染开销，仅适用于展示静态大表格
 
