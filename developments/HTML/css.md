@@ -366,7 +366,7 @@ const webpSupport = () => {
 ---
 ### ``Flex``布局
 - 子元素的``float``、``clear``、``vertical-align``属性将失效
-- ``flex: 1``(grown 1, shrink 1, basis 0)
+- ``flex: 1``(grown 1, shrink 1, basis 0): 内部自动等份处理
 
 ---
 ### 浏览器如何给一个页面元素匹配CSS选择器及提高效率
