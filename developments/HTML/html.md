@@ -400,3 +400,15 @@
 - 临时存储：当最近一次使用时Storage limits达到限制时会被自动清理（LRU Policy）
   - LRU Policy: 磁盘空间满时，配额管理器按最近最少使用的源开始清理，直到浏览器不再超过限制
 
+---
+### 预检请求（Preflight Request）
+由浏览器自动发送的一个``OPTIONS``请求：
+- 询问服务器是否允许当前网页对目标资源进行跨域请求
+- 防止潜在的CSRF
+  - 服务器响应（返回``Access-Control-*``头）通过本次预检后浏览器才发送真正的``POST``请求
+- 当请求**不属于**简单请求时才触发预检
+  - 简单请求：
+    - 方法：``GET``、``POST``、``HEAD``
+    - ``Content-Type``: ``text/plain``、``application/x-www-form-urlencoded``、``multipart/form-data``
+    - 无自定义头部：不能有如``Authorization``、``X-Custom-Header``等
+- 如果接口频繁被调用并触发预检，可设置响应头缓存``Access-Control-Max-Age``，如设置为600时即为600秒内不重复发预检
