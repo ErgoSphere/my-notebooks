@@ -91,7 +91,7 @@
 |  | 307 Temporary Redirect       | 临时重定向，和302类似，但不能变更请求方法   | 
 |  | 308 Permanent Redirect       | 资源永久重定向，和301类似，但不能变更请求方法 | 
 | 4xx |                              | 客户端错误                    | 
-|     | ✳️ 400 Bad Request           | 客户端请求无盗墓笔记               |
+|     | ✳️ 400 Bad Request           | 客户端请求无效                  |
 |     | ✳️ 401 Unauthorized          | 未授权（需身份验证）               |
 |     | ✳️ 403 Forbidden             | 服务器拒绝请求（权限不足）            |
 |     | ✳️ 404 Not Found             | 资源未找到                    |
@@ -385,7 +385,7 @@
       })
     ```
   - CORS: 需浏览器和服务器（设置响应头）同时支持，几乎所有浏览器都支持，ie8和9需通过``XDomainRequest``实现
-    - 当浏览器发起跨域请求时，浏览器先发送一个**预检请求**（``OPTIONS``请求），以确定服务器是否允许跨域。如果允许则发送实际请求，并附带相应响应头
+    - 当浏览器发起跨域请求时，浏览器先发送一个[预检请求](#预检请求)，以确定服务器是否允许跨域。如果允许则发送实际请求，并附带相应响应头
   - 代理PROXY：通过代理服务器转发请求。前端将请求发送到同源服务器，服务器再将请求转发至目标服务器
   - ``Websocket``:
     - ``Websocket``协议本身不受同源策略限制
@@ -401,8 +401,8 @@
   - LRU Policy: 磁盘空间满时，配额管理器按最近最少使用的源开始清理，直到浏览器不再超过限制
 
 ---
-### 预检请求（Preflight Request）
-由浏览器自动发送的一个``OPTIONS``请求：
+### 预检请求
+Preflight Request是由浏览器自动发送的一个``OPTIONS``请求：
 - 询问服务器是否允许当前网页对目标资源进行跨域请求
 - 防止潜在的CSRF
   - 服务器响应（返回``Access-Control-*``头）通过本次预检后浏览器才发送真正的``POST``请求
@@ -412,3 +412,23 @@
     - ``Content-Type``: ``text/plain``、``application/x-www-form-urlencoded``、``multipart/form-data``
     - 无自定义头部：不能有如``Authorization``、``X-Custom-Header``等
 - 如果接口频繁被调用并触发预检，可设置响应头缓存``Access-Control-Max-Age``，如设置为600时即为600秒内不重复发预检
+
+---
+### 移动端页面从竖屏转横屏时，需要做哪些处理（Pending）
+- 对``resize``事件进行监听，判断为竖屏时将整个容器CSS旋转90度
+- 竖屏转横屏时，根字体大小计算由``vw``->``vh``
+  ```scss
+  $vw_base: 375;
+  $vw_fontsize: 20;
+  html{
+    font-size: 20px; // 不支持vw时回退至px
+    font-size: ($vw_fontsize/$vw_base) * 100vw;
+  }
+  @media screen and (orientation: landscape){
+    html {
+      font-size: 20px;
+      font-size: ($vw_fontsize/$vw_base) * 100vh;
+    }
+  }
+  ```
+- canvas横屏适配问题（Pending）

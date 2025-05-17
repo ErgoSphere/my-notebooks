@@ -1030,7 +1030,7 @@ A --- I[自身属性]
 
 ---
 ### 模块化
-- ``ES6``, ``CommonJS``, ``CMD``, ``AMD``
+- 
 - 模块内部数据与实现是私有的，向外部暴露一些接口方法与外部其它模块通信
 - 优势：减少命名空间污染，更好的分离，按需加载，高复用性，高可维护性
 - 引入多个script标签后的问题：请求过多，依赖模糊
@@ -1039,13 +1039,14 @@ A --- I[自身属性]
 > **namespace模式**: 减少全局变量，解决命名冲空，数据不安全，外部可直接修改内部数据
 >
 > **IIFE模式**: 立即调用函数表达式（闭包），将数据及方法封装到一个函数内部，通过给window添加属性来向外暴露接口
-1. **CommonJS**: ```require```和``module.exports``
-   - Node应用模块采用了此种方式，每个文件为一个模块，有自己的作用域，文件内变量、函数、类私有，在服务器端是同步加载，浏览器端需要提前编译打包``browserify``
-   - 不会污染全局作用域
-   - 动态导入：**运行时解析**，只在运行能确定依赖关系及输入输出
-   - 模块只在第一次加载时运行，运行结果缓存，多次加载需要清缓存
-   - 模块加载顺序按在代码中出现的顺序
-   - 输入为被输出值的拷贝，输出后模块内部变化无法再影响此值(值传递或引用传递)
+- 模块化规范： ``CommonJS``, ``ES6``, ``CMD``, ``AMD``
+  - **CommonJS**: ```require```和``module.exports``
+    - Node应用模块采用了此种方式，每个文件为一个模块，有自己的作用域，文件内变量、函数、类私有，在服务器端是同步加载，浏览器端需要提前编译打包``browserify``
+    - 不会污染全局作用域
+    - 动态导入：**运行时解析**，只在运行能确定依赖关系及输入输出
+    - 模块只在第一次加载时运行，运行结果缓存，多次加载需要清缓存
+    - 同步加载，模块加载顺序按在代码中出现的顺序
+    - 输入为被输出值的拷贝，输出后模块内部变化无法再影响此值(值传递或引用传递)
     ```js
     //output 
     module.export = value 
@@ -1060,10 +1061,36 @@ A --- I[自身属性]
     let exists = _fs.exists
     let readfile = _fs.readfile
     ```
-2. **ES6**：``ES Module``
+    - ``require``的执行流程：
+      1. 模块定位（路径解析）：使用Node的``Module._resolveFilename()``函数
+      2. 模块缓存检查：先检查是否已加载（缓存）在``require.cache``中， 如果存在缓存则直接返回缓存中的``module.exports``
+         ```js
+         // 相同模块只执行一次
+         const a1 = require('./a')
+         const a2 = require('./a')
+         console.log(a1 === a2) // true
+         ```
+      3. 读取文件内容（文件加载）：读取``.js``文件时，用``fs.readFileSync``同步读取文件内容
+      4. 包装代码、编译执行：**模块作用域包装（Wrapper）**，防止变量污染全局作用域，然后使用``vm.runInThisContext()``编译执行模块代码，填充``module.exports``
+         ```js
+         (function(exports, require, module, __filename, __dirname){
+           //模块内容
+          })
+         ```
+      5. 返回导出结果``module.exports``的值，同时缓存该模块，避免再次加载
+      ```
+      // 简化版内部源码调用链
+      require -> Module._load
+              -> Module._resolveFilename
+              -> Module._cache 检查
+              -> new Module()
+              -> module.load
+              -> module._compile
+      ```
+  - **ES6**：``ES Module``
     - 使用``import``和``export``: default为独有关键字，导入为强绑定
     - 静态导入：**编译时确定依赖关系**。为了实现静态化，尽可能在运行前就知道依赖关系，输入和输出变量
-    - 适用于浏览器和Node.js
+    - 适用于浏览器和``Node.js``(开启``"type": "module"``)
     ```js
     export { func1, func2, func3 }
     // 仅引入加载了这两个方法，其他方法不加载
@@ -1072,13 +1099,13 @@ A --- I[自身属性]
     import foo from "./foo.js"
     // 不能在条件语句中导入
     if (condition) {
-     import { func1 } froom '..' // 语法错误
+     import { func1 } from '..' // 语法错误
     }
     ```
-3. **AMD**
-   - 非同步，浏览器端常用
-   - 会发送多个请求，且依赖顺序不能错 ，require.js可解决
-   - 只在运行能确定依赖关系及输入输出
+  - **AMD**
+    - 非同步，浏览器端常用
+    - 会发送多个请求，且依赖顺序不能错 ，``require.js``可解决
+    - 只在运行能确定依赖关系及输入输出
     ```js
     define(function() { 
       return 模块
@@ -1086,28 +1113,53 @@ A --- I[自身属性]
     define(['module1', 'module2'], function() {})
     require(['module1', 'module2'], function () {})
     ```
-4. **CMD**
-   - CommonJS和AMD的结合，加载异步，使用时才执行，用于浏览器端（例sea.js）
+  - **CMD**： ``CommonJS``和``AMD``的结合，加载异步，使用时才执行，用于浏览器端（例``sea.js``）
+- ``CommonJS``和``ES6``的``import/require``的执行差异
 
-|                      | ``ESM``                               | ``CommonJS``                           | 
-|----------------------|---------------------------------------|----------------------------------------|
-| 作用域                  | 模块级作用域（独立作用域）                         | 文件级作用域（共享缓存）                           |
-| ``this``             | ``undefined``(严格模式)                   | ``module.exports``                     | 
-| 顶层``await``          | ✅ 支持（Node.js 14.8+）                   | ❌ 不支持                                  | 
-| 是否异步                 | ✅ 是                                   | ❌ 否，为同步加载                              | 
-| 是否缓存                 | ✅ 是                                   | ✅ 是                                    | 
-| 解析方式                 | 静态（编译时确定）                             | 动态（运行时解析）                              | 
-| ``import``位置         | 仅能在顶层                                 | 任意位置                                   | 
-| 是否阻塞                 | ✅ 不阻塞                                 | ❌ 阻塞                                   | 
-| ``require``是否可在条件语句中 | ❌ 不可以                                 | ✅ 可以                                   | 
-| 执行效率                 | 更快（静态解析）                              | 更慢（动态解析）                               | 
-| 加载方式                 | 并行加载                                  | 同步加载（阻塞）                               | 
-| Treeshake            | ✅ 支持（移除未使用代码）                         | ❌ 不支持（全部加载）                            | 
-| 浏览器运行                | ✅ 原生支持                                | ❌ 不支持                                  | 
-| ``Node.js``          | ✅ 支持，需要``'type': 'module'``           | ✅ 默认支持                                 | 
-| ``Webpack/Rollup``   | ✅ 支持                                  | ✅ 支持                                   | 
-| Require ESM?         | ❌ 不能``require()``ESM                  | ✅ ESM可以``import()``CJS                 | 
-| 相互调用                 | ✅ ``import * as module from './cjs.js'`` | ❌ 不支持``require``ESM，可用``import()``动态加载 | 
+|                      | ``ESM``                                  | ``CommonJS``                         | 
+|----------------------|------------------------------------------|--------------------------------------|
+| 作用域                  | 模块级作用域（独立作用域）                            | 文件级作用域（共享缓存）      |
+| ``this``             | ``undefined``(严格模式)                      | ``module.exports``                   | 
+| 顶层``await``          | ✅ 支持（Node.js 14.8+）                      | ❌ 不支持                                | 
+| 是否异步                 | ✅ 是                                      | ❌ 否，为同步加载                            | 
+| 是否缓存                 | ✅ 是                                      | ✅ 是                                  | 
+| 解析方式                 | 静态（编译时确定）                                | 动态（运行时解析）      | 
+| ``import``位置         | 仅能在顶层                                    | 任意位置                                 | 
+| 是否阻塞                 | ✅ 不阻塞                                    | ❌ 阻塞                                 | 
+| ``require``是否可在条件语句中 | ❌ 不可以                                    | ✅ 可以                                 | 
+| 执行效率                 | 更快（静态解析）                                 | 更慢（动态解析）                             | 
+| 加载方式                 | 并行加载                                     | 同步加载（阻塞）                             | 
+| Treeshake            | ✅ 支持（移除未使用代码）                            | ❌ 不支持（全部加载）                          | 
+| 浏览器运行                | ✅ 原生支持                                   | ❌ 不支持                                | 
+| ``Node.js``          | ✅ 支持，需要``'type': 'module'``              | ✅ 默认支持                               | 
+| ``Webpack/Rollup``   | ✅ 支持                                     | ✅ 支持                                 | 
+| Require ESM?         | ❌ 不能``require()``ESM                     | ✅ ESM可以``import()``CJS               | 
+| 相互调用                 | ✅ ``import * as module from './cjs.js'`` | ❌ 不支持``require``ESM，可用``import()``动态加载 |
+| ❗️[循环依赖](#循环依赖)差异        | 返回绑定，即使值未初始化也保留引用            | 返回当前已经执行完的部份                         |
+
+---
+### 循环依赖
+指两个或多个模块之间相互依赖（``A.js -> B.js -> A.js``），形成一个环，导致在模块加载过程中彼此等待或加载不完整
+```js
+// a.js
+const b = require('./b')
+console.log('a.js', b.value)
+exports.value = 'value from a'
+```
+```js
+// b.js
+const a = require('./a')
+console.log('b.js', a.value)
+exports.value = 'value from b'
+```
+```js
+// main.js
+require('./a')
+// 输出：
+// b.js undefined
+// a.js value from b
+```
+当``b.js``执行``require('./a')``时，``a.js``还没执行完（只执行一半），所以``a.value``是``undefined``
 
 ---
 ### ``cacheStorage`` 和 ``cache``
@@ -1679,4 +1731,17 @@ window.fn;
 - 分批渲染（Lazy Load）: 避免一次性渲染所有数据，通过``requestIdleCallback``或者``setTimeout``分批加载
 - ``Web Worker``：在子线程处理数据，避免阻塞主线程
 - 使用``Canvas``绘制表格：不直接操作DOM，避免渲染开销，仅适用于展示静态大表格
+
+---
+### JS中的堆栈和V8中的堆栈的区别（Pending）
+- JS堆栈：语言层面的作用域管理和执行顺序模型
+- V8堆栈：底层内存结构实现，用于支撑语言运行
+
+| 对象    | JS堆栈（语言层）  | V8堆栈（引擎层）                        |
+|-------|------------|----------------------------------|
+| 作用    | 控制函数调用、作用域 | 控制内存分配和数据布局                      |
+| 堆     | 存储引用类型     | 存储对象、闭包、函数等                      |
+| 栈     | 执行上下文栈     | 存储原如数据、函数帧                       |
+| 垃圾回收  | 抽象存在       | GC由V8实际实现                        |
+| 开发可见性 | 仅语义        | Chrome DevTools 或 ``--trace-gc`` |
 

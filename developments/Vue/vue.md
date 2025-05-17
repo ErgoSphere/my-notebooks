@@ -1,5 +1,5 @@
 ### Vue基本原理
-- 创建实例时，Vue遍历data属性，使用``Object.defineProperty``(Vue2)/``Proxy``(Vue3)对其进行包装，定义``getter/setter``，在内部追踪相关依赖。当属性被访问修改时通知变化。每个组件实例有相应的``wathcer``，它在组件渲染过程中把属性记为依赖，当依赖项的``setter``被调用时，会通知``watcher``重新计算，使其相关联的组件更新
+- 创建实例时，Vue遍历``data``属性，使用``Object.defineProperty``(Vue2)/``Proxy``(Vue3)对其进行包装，定义``getter/setter``，在内部追踪相关依赖。当属性被访问修改时通知变化。每个组件实例有相应的``watcher``，它在组件渲染过程中把属性记为依赖，当依赖项的``setter``被调用时，会通知``watcher``重新计算，使其相关联的组件更新
   - 2.0: 通过数据劫持***发布者-订阅者***的方式实现 ⇒ ```Object.defineProperty``` ⇒ 将每个数据读写转化为```getter/setter```， 对象上有```get()```、```set()```
     ```js
     const book = {}
