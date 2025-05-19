@@ -33,13 +33,13 @@ configureWebpack: config => {
 ---
 ### webpack打包流程
 1. 读取webpack的配置参数
-2. 启动webpack, 创建Compiler对象并开始解析项目
-    - compiler是一个全局单例，负责把控整个打包的构建流程。暴露出和webpack整个生命周期相关的钩子<code>compiler-hooks</code>
-    - compilation对象是每次构建的上下文对象，每次热更新和重构，compiler对会重新生成一个新的compilation象负责本次更新的构建，暴露出和模块依赖有关的事件钩子<code>compilation-hooks</code>
-3. 从入口文件(entry)开始解析，找到导入的依赖模块，遍历分析，形成依赖关系树
+2. 启动webpack, 创建`Compiler`对象并开始解析项目
+  - `compiler`是一个全局单例，负责把控整个打包的构建流程。暴露出和webpack整个生命周期相关的钩子`compiler-hooks`
+  - `compilation`对象是每次构建的上下文对象，每次热更新和重构，`compiler`对会重新生成一个新的`compilation`象负责本次更新的构建，暴露出和模块依赖有关的事件钩子<code>compilation-hooks</code>
+3. 从入口文件(`entry`)开始解析，找到导入的依赖模块，遍历分析，形成依赖关系树
     - 模块间的依赖关系来自AST语法树
-4. 对不同文件类型的依赖使用相应的Loader编译，最终转为Javascript文件
-5. 整个过程中webpack会通过发布订阅模式，向外抛出一些hooks，webpack plugin可能过监听这个关键的事件点，执行插件任务。
+4. 对不同文件类型的依赖使用相应的`Loader`编译，最终转为Javascript文件
+5. 整个过程中webpack会通过发布订阅模式，向外抛出一些`hooks`，webpack plugin可能过监听这个关键的事件点，执行插件任务。
 
 ---
 ### webpack5 bundle
@@ -226,3 +226,30 @@ module.exports = {
     ]
   }
   ```  
+  
+---
+### 如何修改第三方npm包
+- 补丁方案``patch-package``：在``node_modules``找到要修改的包，修改内容后运行``patch-package``创建``patch``文件
+  ```
+  npm i patch-package postinstall
+  ```
+  ```
+  npm patch-package package-name
+  ```
+  运行后在项目根目录下创建一个``patches``文件夹并生成一个名为``package-name+version.patch``的文件，在``package.json``中加入
+  ```
+  "script": {
+    "postinstall": "patch-package"
+  }
+  ```
+  
+---
+### 优化
+- [打包优化](#打包优化)
+- `webpack-merge`: 当区分基础/开发/生产环境配置时，在打包时合并
+- `SplitChunksPlugin`: 分割代码，可将公共依赖提取到单独的chunk中，配合浏览器缓存，减少重复加载
+- `TerserPlugin`: 压缩代码
+- `tree-shaking`: 仅打包用到的模块和代码
+- 配置`externals`：将大型库`lodash`等配置为外部依赖，避免打包到最终bundle中
+- `webpack-bundle-analyzer`: 分析打包结果
+- `cache-loader/HardSourceWebpackPlugin`: 缓存构建结果，提高二次构建速度

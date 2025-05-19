@@ -7,20 +7,24 @@
       - 共享缓存（代理缓存）
     - 常见的HTTP缓存只能存储``GET``响应
     - 缓存控制
-      - ``cache-control``: 请求头和响应头都支持
-        ```
-        Cache-Control: no-store //不得缓存任何请求和响应内容
-        Cache-Control: no-cache //缓存但重新验证，请求会发至服务器，服务器验证所描述缓存是否过期，未过期则使用本地缓存副本
-        Cache-Control: public
-        Cache-Control: private // 默认
-        Cache-Control: max-age=3156000 //最大缓存时间，距离请求发起的时间秒数
-        Cache-Control: must-revalidate //必须验证
-        ```
-      - Pragma头：效果与``Cache-Control: no-cache``相同，但不能完全替代，用于兼容
-      - 缓存驱逐：资源过了过期时间后，不会直接删除。当客户端发起一个请求，缓存检索到有对应的已过期副本，会先将此请求附加``If-None-Match``头，发给服务器，若服务器返回304（响应无实体信息）则表示副本是新鲜的，可以节省一些带宽，如判读已过期，则带有该资源的实体返回
-      - 缓存寿命：先看``max-age``，没有则看``Expires``（比较Expires和头Date属性的值），两者都没有则看``Last-Modified``(``寿命 = (Date - Last-Modified) * 10%``)
-      - 更新：``URL + 版本号/时间戳``
-      - ``Vary``：``当前请求 Vary = 缓存请求头 Vary = 缓存响应头 Vary``，才使用缓存的响应。``Vary: User-Agent``可避免缓存服务器错误地把移动端内容输出到桌面端
+      - 强缓存：``cache-control``或``Expires``
+        - ``cache-control``: 请求头和响应头都支持
+          ```
+          Cache-Control: no-store //不得缓存任何请求和响应内容
+          Cache-Control: no-cache //缓存但重新验证，请求会发至服务器，服务器验证所描述缓存是否过期，未过期则使用本地缓存副本
+          Cache-Control: public
+          Cache-Control: private // 默认
+          Cache-Control: max-age=3156000 //最大缓存时间，距离请求发起的时间秒数
+          Cache-Control: must-revalidate //必须验证
+          ```
+        - Pragma头：效果与``Cache-Control: no-cache``相同，但不能完全替代，用于兼容
+        - 优先级：``max-age``高于``Expires``
+      - 协商缓存：``Last-Modified``或``Etag``
+    - 优先级：强缓存高于协商缓存
+    - 缓存驱逐：资源过了过期时间后，不会直接删除。当客户端发起一个请求，缓存检索到有对应的已过期副本，会先将此请求附加``If-None-Match``头，发给服务器，若服务器返回304（响应无实体信息）则表示副本是新鲜的，可以节省一些带宽，如判读已过期，则带有该资源的实体返回
+    - 缓存寿命：先看``max-age``，没有则看``Expires``（比较Expires和头Date属性的值），两者都没有则看``Last-Modified``(``寿命 = (Date - Last-Modified) * 10%``)
+    - 更新：``URL + 版本号/时间戳``
+    - ``Vary``：``当前请求 Vary = 缓存请求头 Vary = 缓存响应头 Vary``，才使用缓存的响应。``Vary: User-Agent``可避免缓存服务器错误地把移动端内容输出到桌面端
 - ``HTTPS``：安全套接字层超文本转输协议，在HTTP的基础上加入了SSL协议，SSL（security sockets layer）依靠证书难证服务器身份，为通信加密。
   - 作用：建立信息安全通道，确认网站真实性, 客户端TLS来解析证书
   - 优点：安全性，谷歌SEO针对HTTPS有排名提升
@@ -319,11 +323,13 @@
 ### 网站性能优化
 1. 合并请求资源：如雪碧图，文件合并，base64
 2. DNS缓存/缓存策略
-3. 延迟加载，减少首屏加载: 如将图片地址存在data属性中，当滚动到可视区域时再赋值src
+3. 按需加载，延迟加载，减少首屏加载: 如将图片地址存在data属性中，当滚动到可视区域时再赋值src
 4. 用户行为触发
 5. CDN
 6. Gzip
 7. 减少cookie大小
+8. 减少重排重绘
+9. 使用Web Worker处理复杂计算
 
 ---
 ### Get请求传参长度限制
@@ -357,7 +363,7 @@
   - JSONP:
     - 仅支持``GET``方法
     - 客户端通过``<script>``标签发起跨域请求，服务器返回一段JS代码，客户端通过执行这段代码获取数据
-    - 调用失败时无不会返回HTTP状态码
+    - 调用失败时无不会返回HTTP状态码，无法处理错误
     - 不安全（xss）
     ```js
     function jsonp ({url, params, cb}) {

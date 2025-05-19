@@ -125,13 +125,18 @@
 
 ---
 ### 响应式布局
-- responsive: @media(CSS3)
+- 常见方案：
+  - 媒体查询``@media``
+  - Flexbox
+  - Grid
+  - rem/vw
+  - 框架方案：Bootstrap，TailwindCSS
 - 各单位：
-    + **px**: 绝对单位，精确按像素显示，chrome强制最小为12px, 可使用```transform: scale``` hack
-    + **em**: 相对单位，基准为父节点字体大小，自身定义了font-size的话则整个页面1em都是不一样的值
-    + **rem**(css3): 相对单位，类root em，根椐节点html字体大小计算(例<code>1 rem = document.documentElement.clientWidth/10 + "px"</code>)，chrome/firefox/IE9
-    + **vw, vh**: 相对单位，视窗宽高，IE9+部份支持
-    + **vmin, vmax**: vw和vh中较小/大的
+  + **px**: 绝对单位，精确按像素显示，chrome强制最小为12px, 可使用```transform: scale``` hack
+  + **em**: 相对单位，基准为父节点字体大小，自身定义了font-size的话则整个页面1em都是不一样的值
+  + **rem**(css3): 相对单位，类root em，根椐节点html字体大小计算(例<code>1 rem = document.documentElement.clientWidth/10 + "px"</code>)，chrome/firefox/IE9
+  + **vw, vh**: 相对单位，视窗宽高，IE9+部份支持
+  + **vmin, vmax**: vw和vh中较小/大的
 
 ---
 ### width 覆盖
@@ -338,15 +343,15 @@ const webpSupport = () => {
 - ```<title>```
 
 ---
-###  回流（reflow）和重绘(repaint)
+###  回流（重排/reflow）和重绘(repaint)
 - 回流：回流是布局或者几何属性需要改变。回流必定会发生重绘，重绘不一定会引发回流。
 - 重绘：由于节点的集合属性发生改变或者由于样式改变而不会影响布局的，成为重绘，例如 outline、visibility、color、background-color 等
 - 优化：
-    - 避免使用强制渲染刷新队列的函数，如```width```, ```height```, ```getBoundingClientRect```, ````scrollTop````, ```offsetTop```等
-    - 使用```visibility（重绘）```替换```display: none（回流）```
-    - 避免使用```table```
-    - 避免使用```css表达式（回流）```
-    - 动画效果应用到```position```属性为```absolute```或```fixed```的元素上
+  - 避免使用强制渲染刷新队列的函数，如```width```, ```height```, ```getBoundingClientRect```, ````scrollTop````, ```offsetTop```等
+  - 使用```visibility（重绘）```替换```display: none（回流）```
+  - 避免使用```table```
+  - 避免使用```css表达式（回流）```
+  - 动画效果应用到```position```属性为```absolute```或```fixed```的元素上
 
 ---
 ### ```animation-timing-function```使用贝塞尔曲线

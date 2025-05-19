@@ -1135,7 +1135,7 @@ A --- I[自身属性]
 | ``Webpack/Rollup``   | ✅ 支持                                     | ✅ 支持                                 | 
 | Require ESM?         | ❌ 不能``require()``ESM                     | ✅ ESM可以``import()``CJS               | 
 | 相互调用                 | ✅ ``import * as module from './cjs.js'`` | ❌ 不支持``require``ESM，可用``import()``动态加载 |
-| ❗️[循环依赖](#循环依赖)差异        | 返回绑定，即使值未初始化也保留引用            | 返回当前已经执行完的部份                         |
+| ❗️[循环依赖](#循环依赖)差异        | 导出“绑定引用”，即使值未初始化也保留引用                    | 返回当前已经执行完的部份                         |
 
 ---
 ### 循环依赖
@@ -1160,6 +1160,11 @@ require('./a')
 // a.js value from b
 ```
 当``b.js``执行``require('./a')``时，``a.js``还没执行完（只执行一半），所以``a.value``是``undefined``
+
+解决：
+- 重构模块结构：拆分为更小的、无耦合的工具模块
+- 延迟加载：将``require/import``放到函数内部或事件中触发
+- 提取公共依赖到第三个模块
 
 ---
 ### ``cacheStorage`` 和 ``cache``
@@ -1532,18 +1537,29 @@ console.log([...set_a]) // [5, "5"]
   1. 调用``async``: 立即返回一个``Promise``对象
   2. 遇到``await``: 暂停函数执行，等待其后的``Promise``解决。在此期间JS引擎会执行其他任务，保持单线程的响应性（通过事件循环）
   3. ``Promise``解决后：将结果返回给``await``，恢复函数执行
-  4. 错误处理：若``Promise``拒绝，抛出异常，可以用``try..catch``捕获
-  ```js
-  async function fetchUser() {
-    try {
-      const response = await fetch('/api/user') // 暂停，等待fetch完成
-      const data = await response.json() // 暂停，等待json解析
-      return data
-    } catch (error) {
-      console.log(error)
-    }
-  }
-  ```
+  4. 处理错误方法：
+    - ``try..catch``捕获
+      ```js
+      async function fetchUser() {
+        try {
+          const response = await fetch('/api/user') // 暂停，等待fetch完成
+          const data = await response.json() // 暂停，等待json解析
+          return data
+        } catch (error) {
+          console.log(error)
+        }
+      }
+      ```
+    - ``Promise.catch()``
+      ```js
+      async function fetchData() {
+        const response = await fetch('/api/data').catch(err => {
+          console.error(error)
+        })
+        if (!response) return 
+        const data = await response.json()
+      }
+      ```
 - ``async/await`` VS ``回调函数/then链式调用``：``async/await``提供更简洁、同步化的语法，使错误处理也更简洁
 - ``await``在``Promise reject``时是否继续进行：会把异常原因抛出
   ```js

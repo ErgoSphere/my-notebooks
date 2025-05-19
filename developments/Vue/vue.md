@@ -57,6 +57,7 @@
     - 通够直接代理整个对象及其嵌套属性，不需要给每个属性添加``getter/setter``
     - 返回一个新对象，可以只操作新对象以达到目的
     - ES6语法，可能有兼容性问题
+    - 惰性代理，仅在访问时触发
 
 ---
 ### Vue3运行机制概述
@@ -219,10 +220,16 @@
 - Vue使用的Mustache模板引擎（双大括号语法）
 
 ---
-### keep-alive使用注意
-- 初次进入：created → mounted → activated
-- 退出时触发deactivated
-- 再次进入仅触发activated
+### 缓存组件``keep-alive``使用注意
+- 初次进入：``created`` → ``mounted`` → ``activated``
+- 退出时触发``deactivated``
+- 再次进入仅触发``activated``
+- 条件缓存：使用``include/exclude``
+  ```vue
+  <keep-alive include="ComponentA, ComponentB">
+    <router-view></router-view>
+  </keep-alive>
+  ```
 
 ---
 ### vue动态组件 + keep-alive
@@ -337,3 +344,5 @@ function flushCallbacks() {
 - 代码组织： 可将关联业务逻辑组织在一个hooks内部，响应变量和方法在一起定义和调用
 - ``Hook`` vs ``Utils``
   - hook着重的是对业务逻辑的复用，有响应式状态；utils强调的是单一操作的公共方法，无状态
+
+---
