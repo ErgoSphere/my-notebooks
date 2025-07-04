@@ -101,3 +101,52 @@
   ```
   - rebase适用于个人开发分支想要同步主分支最新代码的状况
   - 多人协作时开发分支如已推送到远程，rebase会改变提交哈希，可能导致代码冲突
+- 回滚至上个提交/指定commit
+  ```
+  # 回滚提交
+  git reset --hard HEAD~1 # 回退上一个提交
+  git reset --hard [commit-hash]
+  
+  # 强制推送至远程覆盖提交
+  git push [shortname] [branch-name] --force
+  ```
+- 本地分支落后于远程分支，git不允许直接push的解决
+  - 方法一：先合并远程分支再push(推荐，更安全)
+    ```
+    git pull [shortname] [branch-name] --rebase #先把远程提交拉下来变基到本地提交前，--rebase比pull更合适，避免合并提交污染历史
+    git push [shortname] [branch-name]
+    ```
+  - 方法二：强制推送（只适合单人开发）
+- 开发中，别人更新了[branch-name1]，而自己在[branch-name2]中开发，希望保持线性历史：
+  ```
+  git checkout [branch-name2]
+  git fetch [shortname]
+  git rebase [shortname]/[branch-name2] #等于把[branch-name2]上的提交搬到最新的[branch-name1]之后
+  ```
+- 合并多个commit为一个
+  ```
+  git rebase -i HEAD~3 # 合并最近3个提交
+  ```
+  进入交互后看到类似
+  ```
+  pick  abc123  commit message 1
+  pick  def456  commit message 2
+  pick  ghi789  commit message 3
+  ``
+  把后面的改成 `squash` 或 `s`，只保留第一个是 `pick`
+  ```
+  pick   abc123  commit message 1
+  squash def456  commit message 2
+  squash ghi789  commit message 3
+  ```
+  然后保存退出（通常是 Vim：按 `Esc`，输入 `:wq` 回车）
+- 合并远程a分支到本地b分支
+  ```
+  git fetch origin
+  git checkout b
+  git merge origin/a
+  ```
+- 修改当前分支名称
+  ```
+  git branch -m [new-branch-name]
+  ```
