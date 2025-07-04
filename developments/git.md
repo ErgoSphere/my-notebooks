@@ -150,3 +150,27 @@
   ```
   git branch -m [new-branch-name]
   ```
+- 删除分支
+  ```
+  git push [shortname] --delete [branch-name] # 远程
+  git branch -d [branch-name] # 本地
+  ```
+- a分支上修入了文件但未commit, 要切换到b分支但git不允许切换的解决
+  ```
+  git stash -u // in a
+  git checkout b // do something you want
+  ...
+  git checkout a
+  git stash pop
+  ```
+- `fetch`和`pull`的区别
+  - 多人协作开发时，`fetch + merge`更安全
+  - 个人项目中可以用`pull`快速同步，如果想让历史记录整洁，可以用`git pull --rebase`
+- 以当前分支为模板创建新分枝
+  ```
+  git checkout -b [new-branch-name]
+  ```
+- 仅推送a到远程未存在的b（本地不切换）
+  ```
+  git push origin a:refs/heads/b
+  ```
