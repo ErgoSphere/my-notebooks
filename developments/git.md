@@ -64,8 +64,9 @@
   ```
 - 某提交应用到当前分支
   ``` 
-  git cherry-pick [commit-hash]
+  git cherry-pick [commit-hash1] [commit-hash2] [...]
   ```
+  `cherry-pick`的应用顺序: 1覆盖当前文件，2覆盖已应用了1的文件，依次类推 
 - 本地仓库删除commit
   ```
    git reset --hard [commit-id] //回滚到commid-id
