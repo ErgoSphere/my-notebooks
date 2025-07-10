@@ -1,5 +1,5 @@
-- 已有打包好的前端项目生成镜像运行
-  1. 在dist文件夹同级目录下创建`Dockerfile`
+### 已有打包好的前端项目生成镜像运行
+1. 在dist文件夹同级目录下创建`Dockerfile`
   ```Dockerfile
   From nginx:alpine
   
@@ -12,11 +12,11 @@
 
   CMD["nginx", "-g", "daemon off;"]
   ```
-  2. 构建docker镜像
+2. 构建docker镜像
   ```bash
   docker build -t my-app .
   ```
-  3. 运行docker窗口
+3. 运行docker窗口
   ```
   docker run -d -p 8080:80 my-app
   ```
