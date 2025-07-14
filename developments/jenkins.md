@@ -28,6 +28,12 @@ docker run -d --name jenkins -p 9090:8080 -p 50000:50000 -v "D:/jenkins:/var/jen
 
 ---
 ### 服务器部署jenkins，连接gitlab，自动部署到服务器
+- jenkins内需要的插件：
+   - `GitLab Authentication plugin`
+   - `GitLab Plugin`
+   - `GitLab API Plugin`
+   - `Nodejs Plugin`
+   - `Publish Over SSH`
 - ssh-key配置：生成服务器上jenkins用的户的ssh-key（不等同于服务器ssh-key）, 公钥填至gitlab用户上，私钥在jenkins内配置
    - 生成服务器jenkins用户ssh-key并复制
      ```bash
@@ -47,3 +53,58 @@ docker run -d --name jenkins -p 9090:8080 -p 50000:50000 -v "D:/jenkins:/var/jen
          ### 必须在root权限下执行
          ssh-keyscan -t ed25519 gitlab.com | sudo tee -a /etc/ssh/ssh_known_hosts
          ```
+- jenkins新建任务：
+   1. 新建自由风格任务
+   2. 源码管理选择git，填入Repository URL和Credentials。Credentials添加凭据时选择为全局，类型为`SSH Username with private key`, Username填入gitlab用户名，Private Key填入上面生成的私钥。可指定Branches to build
+   3. Enviroment内选择`Provide Node & npm bin/ folder to PATH，指定Nodejs版本，避免build过程中出现版本太老构建失败问题
+      - 指定nodejs版本：系统管理 > 全局工具配置 > Nodejs安装 > 新增安装 > install from nodejs.org
+   4. 配置执行shell：推荐将项目构建和镜像构建都放在jenkins上进行，方便管理，dockerfile仅做容器nginx和管理
+      ```bash
+      #!/bin/bash
+      echo "清理旧容器、旧镜像和旧依赖包"
+      docker stop web-container || true
+      docker rm web-container || true
+      docker rmi web-image || true
+      rm -rf node_modules
+
+      echo "安装依赖包"
+      npm i
+
+      echo "构建项目"
+      npm run build
+
+      echo "构建镜像"
+      docker build -t web-image:v1 .
+
+      echo "运行容器"
+      docker run -d --name web-container -p [对外端口]:80 web-image:v1  # 不指定版本时解析为web-image:latest
+      ```
+- 项目文件根目录增加`Dockerfile`
+  ```Dockerfile
+  FROM nginx:alpine
+
+  # 此处均为容器内部
+  COPY ./dist /usr/share/nginx/html
+
+  # 需要更改nginx配置的话上下文增加容器内nginx.conf，注意相对路径
+  # COPY nginx.conf /etc/nginx/nginx.conf
+
+  EXPOSE 80
+
+  CMD["nginx", "-g", "daemon off;"]
+  ```
+- 服务器`nginx.conf`配置转发请求
+   ```bash
+   server {
+      listen [外部访问端口号] defalut_server;
+      listen [::]:[外部访问端口号] defalut_server;
+      server_name _;
+
+      location / {
+          proxy_pass http://127.0.0.1:1689;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      }
+   }
+   ```
