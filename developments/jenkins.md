@@ -3,7 +3,6 @@
 docker run -d --name jenkins -p 9090:8080 -p 50000:50000 -v "D:/jenkins:/var/jenkins_home" --restart=on-failure jenkins/jenkins:lts-jdk21
 ```
 
----
 ### 推送代码到远程仓库 → 本地 Jenkins 自动检测到变更 → 自动触发流水线 → 构建并部署到本地 Docker 容器 <前端示例, gitlab>
 1. Jenkins安装插件：
    - `NodeJS`
@@ -26,7 +25,6 @@ docker run -d --name jenkins -p 9090:8080 -p 50000:50000 -v "D:/jenkins:/var/jen
 5. Jenkins新建流水线任务：Pipeline script from SCM
 6. 添加触发器：仓库设置Webhook 
 
----
 ### 服务器部署jenkins，连接gitlab，自动部署到服务器
 - jenkins内需要的插件：
    - `GitLab Authentication plugin`
