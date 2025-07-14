@@ -16,7 +16,7 @@ docker run -d --name jenkins -p 9090:8080 -p 50000:50000 -v "D:/jenkins:/var/jen
    预期输出应该是：Welcome to Gitlab, xxx
 3. 本地运行nginx窗口，挂载前端部署目录，如
    ```bash
-  docker run -d --name jenkins -p 9090:8080 -p 50000:50000 -v "D:/jenkins:/var/jenkins_home" -v "D:/jenkins/.ssh/known_hosts" --restart=on-failure jenkins/jenkins:lts-jdk21
+   docker run -d --name jenkins -p 9090:8080 -p 50000:50000 -v "D:/jenkins:/var/jenkins_home" -v "D:/jenkins/.ssh/known_hosts" --restart=on-failure jenkins/jenkins:lts-jdk21
    ```
 4. 配置凭据（SSH-KEY方式）
   - 私有仓库添加SSH-KEY
