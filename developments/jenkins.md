@@ -58,7 +58,7 @@ docker run -d --name jenkins -p 9090:8080 -p 50000:50000 -v "D:/jenkins:/var/jen
    2. 源码管理选择git，填入Repository URL和Credentials。Credentials添加凭据时选择为全局，类型为`SSH Username with private key`, Username填入gitlab用户名，Private Key填入上面生成的私钥。可指定Branches to build
    3. Enviroment内选择`Provide Node & npm bin/ folder to PATH，指定Nodejs版本，避免build过程中出现版本太老构建失败问题
       - 指定nodejs版本：系统管理 > 全局工具配置 > Nodejs安装 > 新增安装 > install from nodejs.org
-   4. 配置执行shell：推荐将项目构建和镜像构建都放在jenkins上进行，方便管理，dockerfile仅做容器nginx和管理
+   4. 配置执行shell：推荐将项目构建和镜像构建都放在jenkins上进行，构建日志清晰，dockerfile仅做dist拷贝和容器nginx配置
       ```bash
       #!/bin/bash
       echo "清理旧容器、旧镜像和旧依赖包"
@@ -79,7 +79,22 @@ docker run -d --name jenkins -p 9090:8080 -p 50000:50000 -v "D:/jenkins:/var/jen
       echo "运行容器"
       docker run -d --name web-container -p [对外端口]:80 web-image:v1  # 不指定版本时解析为web-image:latest
       ```
-- 项目文件根目录增加`Dockerfile`
+      - 确保jenkins用户对docker有权限执行：加入docker用户组
+         ```bash
+         # 1. 检查docker组是否存在
+         getent group docker
+         # >>> docker:x:998: username1,username2
+         # 2. 没有就创建
+         sudo groupadd docker
+         # 3. 添加jenkins
+         sudo usermod -aG docker jenkins
+         # 4. 重启jenkins
+         sudo systemctl restart jenkins
+         # 5. 验证权限是否生效
+         sudo su -jenkins
+         docker ps
+         ```
+- 项目文件根目录增加`Dockerfile`, Docker内的nginx作为静态资源服务器来提供前端打包的静态文件产物
   ```Dockerfile
   FROM nginx:alpine
 
@@ -108,3 +123,9 @@ docker run -d --name jenkins -p 9090:8080 -p 50000:50000 -v "D:/jenkins:/var/jen
       }
    }
    ```
+   配置完成后重启nginx
+   ```bash
+   sudo nginx -s reload
+   ```
+- 其他问题整理
+  - 
