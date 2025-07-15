@@ -119,7 +119,7 @@ git push [shortname] [branch-name] --force
 ```
 git checkout [branch-name2]
 git fetch [shortname]
-git rebase [shortname]/[branch-name2] #等于把[branch-name2]上的提交搬到最新的[branch-name1]之后
+git rebase [shortname]/[branch-name1] #等于把[branch-name2]上的提交搬到最新的[branch-name1]之后
  ```
 ### 合并多个commit为一个
  ```
