@@ -160,3 +160,7 @@ git branch -d [branch-name] # 本地
 ```
 git push origin a:refs/heads/b
 ```
+### 修改远程仓库地址
+```
+git remote set-url origin <new-remote-address>
+```
