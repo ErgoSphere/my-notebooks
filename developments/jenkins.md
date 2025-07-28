@@ -138,7 +138,7 @@ sudo stystemctl status jenkins
 
    # >>>
    # ii  jenkins  2.504.3  all Jenkins is the leading open source automation server....
-   
+
    ```
 2. 备份数据
    ```
@@ -150,11 +150,11 @@ sudo stystemctl status jenkins
 3. 添加/更新jenkins官方仓库
    ```
    wget -q -O - https://pkg.jenkins.io/debian/jenkins.io.key | sudo tee \
-  /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+   /usr/share/keyrings/jenkins-keyring.asc > /dev/null
 
-  echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
-  https://pkg.jenkins.io/debian binary/ | sudo tee \
-  /etc/apt/sources.list.d/jenkins.list > /dev/null
+   echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+   https://pkg.jenkins.io/debian binary/ | sudo tee \
+   /etc/apt/sources.list.d/jenkins.list > /dev/null
    ```
 4. 更新apt，升级Jenkins
    ```
