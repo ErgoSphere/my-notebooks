@@ -3,6 +3,11 @@
 docker run -d --name jenkins -p 9090:8080 -p 50000:50000 -v "D:/jenkins:/var/jenkins_home" --restart=on-failure jenkins/jenkins:lts-jdk21
 ```
 
+### 查看jenkins运行状态
+```
+sudo stystemctl status jenkins
+```
+
 ### 推送代码到远程仓库 → 本地 Jenkins 自动检测到变更 → 自动触发流水线 → 构建并部署到本地 Docker 容器 <前端示例, gitlab>
 1. Jenkins安装插件：
    - `NodeJS`
@@ -125,5 +130,38 @@ docker run -d --name jenkins -p 9090:8080 -p 50000:50000 -v "D:/jenkins:/var/jen
    ```bash
    sudo nginx -s reload
    ```
-- 其他问题整理
-  - 
+
+### 服务器jenkins升级 
+1. 确认jenkins的安装方式
+   ```
+   dpkg -l | grep jenkins
+
+   # >>>
+   # ii  jenkins  2.504.3  all Jenkins is the leading open source automation server....
+   
+   ```
+2. 备份数据
+   ```
+   # Jenkins 数据目录
+   sudo cp -r /var/lib/jenkins /var/lib/jenkins_backup
+   # Jenkins 配置文件
+   sudo cp /etc/default/jenkins /etc/default/jenkins_backup
+   ```
+3. 添加/更新jenkins官方仓库
+   ```
+   wget -q -O - https://pkg.jenkins.io/debian/jenkins.io.key | sudo tee \
+  /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+
+  echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+  https://pkg.jenkins.io/debian binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+   ```
+4. 更新apt，升级Jenkins
+   ```
+   sudo apt update
+   sudo apt install jenkins
+   ```
+5. 重启jenkins服务
+   ```
+   sudo systemctl restart jenkins
+   ```
