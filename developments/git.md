@@ -156,8 +156,10 @@ git branch -d [branch-name] # 本地
 ### `fetch`和`pull`的区别
 - 多人协作开发时，`fetch + merge`更安全
 - 个人项目中可以用`pull`快速同步，如果想让历史记录整洁，可以用`git pull --rebase`
-### 仅推送a到远程未存在的b（本地不切换）
+### 仅推送a到远程未存在的b
 ```
+git push origin a:b
+# 本地不切换分支
 git push origin a:refs/heads/b
 ```
 ### 修改远程仓库地址
