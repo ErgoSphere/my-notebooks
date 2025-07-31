@@ -23,26 +23,26 @@ git init
 ```
 ### 将远程仓库同步到本地
 ```
-git clone [remote-address]
+git clone <remote-address>
 ```
 ### 当前项目添加远程仓库
 ```
-git remote add [shortname] [remote-url]
+git remote add <shortname> <remote-url>
 ```
 ### 创建新分支
 ```
-git branch [branch-name]
+git branch <branch-name>
 # 以当前分支为模板创建新分支
-git checkout -b [new-branch-name]
+git checkout -b <new-branch-name>
 ```
 ### 本地仓库同步到远程仓库
 ```
 git push 
-git push -u [shortname] [branch-name]
+git push -u <shortname> <branch-name>
 ```
 ### 切换分支
 ```
-git checkout [branch-name]
+git checkout <branch-name>
 ```
 ### 分支a的所有提交应用到分支b
 ```
@@ -67,12 +67,12 @@ git reset --hard [commit-id]
 ```
 ### 拉取远程新增分支
 ```
-git fetch [shortname] [branch-name]
+git fetch <shortname> <branch-name>
 ```
 ### 拉取分支最新代码
 ```
 # 会跳过merge
-git pull [shortname] [branch-name]
+git pull <shortname> <branch-name>
 ```
 ### 配置用户名和邮箱
 ```
@@ -86,7 +86,7 @@ git stash -u
 # 从栈中检出
 git stash pop
 # 从当前栈中检出最近一次记录并创建新分支
-git stash branch [new-branch-name]
+git stash branch <new-branch-name>
 ```
 ### ``merge``和``rebase``（变基）的区别
 ```
@@ -106,20 +106,20 @@ git reset --hard HEAD~1 # 回退上一个提交
 git reset --hard [commit-hash]
   
 # 强制推送至远程覆盖提交
-git push [shortname] [branch-name] --force
+git push <shortname> <branch-name> --force
 ```
 ### 本地分支落后于远程分支，git不允许直接push的解决
 - 方法一：先合并远程分支再push(推荐，更安全)
   ```
-  git pull [shortname] [branch-name] --rebase #先把远程提交拉下来变基到本地提交前，--rebase比pull更合适，避免合并提交污染历史
-  git push [shortname] [branch-name]
+  git pull <shortname> <branch-name> --rebase #先把远程提交拉下来变基到本地提交前，--rebase比pull更合适，避免合并提交污染历史
+  git push <shortname> <branch-name>
   ```
 - 方法二：强制推送（只适合单人开发）
 ### 开发中，别人更新了[branch-name1]，而自己在[branch-name2]中开发，希望保持线性历史：
 ```
-git checkout [branch-name2]
-git fetch [shortname]
-git rebase [shortname]/[branch-name1] #等于把[branch-name2]上的提交搬到最新的[branch-name1]之后
+git checkout <branch-name2>
+git fetch <shortname>
+git rebase <shortname>/<branch-name1> #等于把<branch-name2>上的提交搬到最新的<branch-name1>之后
  ```
 ### 合并多个commit为一个
  ```
@@ -146,12 +146,12 @@ git merge origin/a
 ```
 ### 修改当前分支名称
 ```
-git branch -m [new-branch-name]
+git branch -m <new-branch-name>
 ```
 ### 删除分支
 ```
-git push [shortname] --delete [branch-name] # 远程
-git branch -d [branch-name] # 本地
+git push <shortname> --delete <branch-name> # 远程
+git branch -d <branch-name> # 本地
 ```
 ### `fetch`和`pull`的区别
 - 多人协作开发时，`fetch + merge`更安全
@@ -165,4 +165,8 @@ git push origin a:refs/heads/b
 ### 修改远程仓库地址
 ```
 git remote set-url origin <new-remote-address>
+```
+### 删除远程仓库关联
+```
+git remote remove <shortname>
 ```
