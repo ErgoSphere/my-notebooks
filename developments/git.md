@@ -170,3 +170,12 @@ git remote set-url origin <new-remote-address>
 ```
 git remote remove <shortname>
 ```
+### 将B分支开发的内容合并到A分支上，并将B分支上的commits合并，只在A分支上显示一条记录(不追踪历史记录)，最后将B分支状态与A分支状态同步
+```
+git checkout A
+git merge --squash B
+git commit "squash merge B"
+
+git checkout B
+git reset --hard A
+```
