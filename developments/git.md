@@ -179,3 +179,25 @@ git commit "squash merge B"
 git checkout B
 git reset --hard A
 ```
+### 消除多个commit中的某些commit
+```
+commit a
+commit 1
+commit 2
+commit b
+commit c
+```
+执行
+```
+git revert <commit 1> <commit 2>
+```
+结果会变成
+```
+commit a
+commit 1
+commit 2
+commit b
+commit c
+revert-commit 1 # 把 commit 1 的改动撤销
+revert-commit 2 # 把 commit 2 的改动撤销
+```
